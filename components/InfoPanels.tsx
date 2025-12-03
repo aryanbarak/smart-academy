@@ -9,9 +9,9 @@ const InfoPanels: React.FC<InfoPanelsProps> = ({ type }) => {
   const isGA2 = type === 'GA2';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 max-w-5xl mx-auto px-4">
       {/* German Info Panel */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">
           🇩🇪 Kursinhalt
         </h3>
@@ -23,7 +23,7 @@ const InfoPanels: React.FC<InfoPanelsProps> = ({ type }) => {
       </div>
 
       {/* Farsi Info Panel (RTL) */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700" dir="rtl">
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow border border-gray-200 dark:border-gray-700" dir="rtl">
         <h3 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 font-farsi">
           🇮🇷 محتوای دوره
         </h3>

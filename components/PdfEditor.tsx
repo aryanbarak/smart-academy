@@ -21,6 +21,11 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawColor, setDrawColor] = useState('#ff0000');
   const [lineWidth, setLineWidth] = useState(2);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Array<{ pageNum: number; text: string }>>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
 
   // pagesOrder holds either number (original page 1-based) or 'blank'
   const [pagesOrder, setPagesOrder] = useState<Array<number | 'blank'>>([]);
@@ -41,6 +46,8 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
   useEffect(() => {
     let mounted = true;
     // Reset state when URL changes
+    setIsLoading(true);
+    setLoadProgress(0);
     setPdfDoc(null);
     setLoadErrorMsg(null);
     setPagesOrder([]);
@@ -49,24 +56,34 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
     (async () => {
       try {
         console.debug('[PdfEditor] loading pdfjs and pdf-lib for url', url);
+        setLoadProgress(10);
         const pdfjs = await import('pdfjs-dist/legacy/build/pdf');
-        // Use unpkg CDN with matching version
-        (pdfjs as any).GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.4.449/build/pdf.worker.min.js';
-        console.debug('[PdfEditor] worker configured to unpkg v5.4.449');
+        // Import worker as module instead of external URL for offline support
+        const pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs?url');
+        (pdfjs as any).GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+        console.debug('[PdfEditor] worker configured for offline use');
+        setLoadProgress(30);
         const pl = await import('pdf-lib');
         if (!mounted) return;
         setPdfModule(pdfjs);
         setPdfLib(pl);
+        setLoadProgress(50);
 
         const loadingTask = (pdfjs as any).getDocument(url);
+        loadingTask.onProgress = (progress: any) => {
+          const percent = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 40) : 0;
+          setLoadProgress(50 + percent);
+        };
         const doc = await loadingTask.promise;
         if (!mounted) return;
+        setLoadProgress(95);
         console.debug('[PdfEditor] loaded pdf document', { numPages: doc?.numPages });
         if (!doc || !doc.numPages || doc.numPages === 0) {
           setLoadErrorMsg('PDF konnte nicht geladen werden oder enthält keine Seiten.');
           setPdfDoc(null);
           setNumPages(0);
           setPagesOrder([]);
+          setIsLoading(false);
           return;
         }
         // Clear any previous error
@@ -75,6 +92,8 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
         setNumPages(doc.numPages);
         // initialize pagesOrder
         setPagesOrder(Array.from({ length: doc.numPages }, (_, i) => i + 1));
+        setLoadProgress(100);
+        setIsLoading(false);
         console.debug('[PdfEditor] ✅ PDF ready! Pages:', doc.numPages);
       } catch (err: any) {
         console.error('[PdfEditor] error loading PDF or libs', err);
@@ -82,6 +101,7 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
         setPdfDoc(null);
         setNumPages(0);
         setPagesOrder([]);
+        setIsLoading(false);
       }
     })();
     return () => { mounted = false; };
@@ -97,6 +117,64 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdfDoc, pageIndex, scale, pagesOrder]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't interfere with text input
+      if (showTextInput || (e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Page navigation
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Shift+Space: Previous page
+          setPageIndex(prev => Math.max(0, prev - 1));
+        } else {
+          // Space: Next page
+          setPageIndex(prev => Math.min(pagesOrder.length - 1, prev + 1));
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setPageIndex(prev => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setPageIndex(prev => Math.min(pagesOrder.length - 1, prev + 1));
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        setPageIndex(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        setPageIndex(pagesOrder.length - 1);
+      }
+      // F key for fullscreen
+      else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        const container = document.querySelector('.pdf-viewer-container') as HTMLElement;
+        if (container) {
+          if (!document.fullscreenElement) {
+            container.requestFullscreen();
+          } else {
+            document.exitFullscreen();
+          }
+        }
+      }
+      // Escape to close fullscreen (handled by browser by default, but we can also trigger onClose)
+      else if (e.key === 'Escape' && !document.fullscreenElement && onClose) {
+        onClose();
+      }
+      // Ctrl+F for search
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pagesOrder.length, showTextInput, onClose]);
 
   const renderCurrentPage = async () => {
     if (!pdfDoc || !canvasRef.current) return;
@@ -212,6 +290,50 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
 
   const onZoom = (delta: number) => { setScale(s => Math.max(0.5, Math.min(3, +(s + delta).toFixed(2)))); };
 
+  // Search functionality
+  const performSearch = async () => {
+    if (!pdfDoc || !searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    
+    const results: Array<{ pageNum: number; text: string }> = [];
+    const query = searchQuery.toLowerCase();
+    
+    for (let i = 1; i <= numPages; i++) {
+      try {
+        const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        
+        if (pageText.toLowerCase().includes(query)) {
+          // Extract context around the match
+          const lowerPageText = pageText.toLowerCase();
+          const matchIndex = lowerPageText.indexOf(query);
+          const start = Math.max(0, matchIndex - 40);
+          const end = Math.min(pageText.length, matchIndex + query.length + 40);
+          const context = pageText.substring(start, end);
+          
+          results.push({
+            pageNum: i,
+            text: (start > 0 ? '...' : '') + context + (end < pageText.length ? '...' : '')
+          });
+        }
+      } catch (err) {
+        console.error('Error searching page', i, err);
+      }
+    }
+    
+    setSearchResults(results);
+  };
+
+  const goToSearchResult = (pageNum: number) => {
+    const idx = pagesOrder.findIndex(p => p === pageNum);
+    if (idx !== -1) {
+      setPageIndex(idx);
+    }
+  };
+
   // when adding text via input
   const commitTextAtPos = () => {
     if (!textPos) { setShowTextInput(false); return; }
@@ -275,16 +397,123 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
   };
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-      <div style={{ position: 'relative', width: '100%', minHeight: '600px', overflow: 'auto', backgroundColor: '#f5f5f5' }}>
+    <div className="h-full w-full flex flex-col bg-white dark:bg-gray-800 pdf-viewer-container">
+      {!loadErrorMsg && pdfDoc && (
+        <div className="flex items-center justify-between gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPageIndex(prev => Math.max(0, prev - 1))}
+                disabled={pageIndex === 0}
+                className="px-1.5 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Vorherige Seite"
+              >
+                ◄
+              </button>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-200 min-w-[60px] text-center">
+                {pageIndex + 1} / {pagesOrder.length}
+              </span>
+              <button
+                onClick={() => setPageIndex(prev => Math.min(pagesOrder.length - 1, prev + 1))}
+                disabled={pageIndex >= pagesOrder.length - 1}
+                className="px-1.5 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Nächste Seite"
+              >
+                ►
+              </button>
+            </div>
+            <div className="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+            <button
+              onClick={() => onZoom(-0.25)}
+              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              title="Zoom Out (−)"
+            >
+              −
+            </button>
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-200 min-w-[50px] text-center">
+              {Math.round(scale * 100)}%
+            </span>
+            <button
+              onClick={() => onZoom(0.25)}
+              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              title="Zoom In (+)"
+            >
+              +
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const container = canvas.parentElement?.parentElement;
+                if (!container) return;
+                const containerWidth = container.clientWidth - 40;
+                const newScale = containerWidth / canvas.width * scale;
+                setScale(Math.max(0.5, Math.min(3, +newScale.toFixed(2))));
+              }}
+              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              title="Fit to Width"
+            >
+              Breite
+            </button>
+            <button
+              onClick={() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const container = canvas.parentElement?.parentElement;
+                if (!container) return;
+                const containerHeight = container.clientHeight - 40;
+                const newScale = containerHeight / canvas.height * scale;
+                setScale(Math.max(0.5, Math.min(3, +newScale.toFixed(2))));
+              }}
+              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              title="Fit to Height"
+            >
+              Höhe
+            </button>
+            <button
+              onClick={() => setScale(1.0)}
+              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              title="Reset to 100%"
+            >
+              100%
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
         {loadErrorMsg ? (
-          <iframe src={url} title="pdf-viewer" style={{ width: '100%', height: '700px', border: '1px solid #ddd' }} />
-        ) : !pdfDoc ? (
-          <div className="p-6 text-center text-gray-500">در حال بارگذاری PDF...</div>
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">PDF konnte nicht geladen werden</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{loadErrorMsg}</p>
+            <div className="text-xs text-gray-400 mb-4">Versuche iframe fallback...</div>
+            <iframe src={url} title="pdf-viewer" className="w-full h-96 border border-gray-300 dark:border-gray-600 rounded-lg" />
+          </div>
+        ) : isLoading ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-700 dark:text-gray-300 font-medium mb-2">PDF wird geladen...</p>
+              <div className="w-64 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                  style={{ width: `${loadProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{loadProgress}%</p>
+            </div>
+          </div>
         ) : (
-          <div style={{ position: 'relative', display: 'inline-block', margin: '0 auto' }}>
-            <canvas ref={canvasRef} style={{ display: 'block', border: '1px solid #ddd', backgroundColor: '#fff' }} />
-            <canvas ref={overlayRef} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'auto', cursor: 'crosshair' }} />
+          <div className="flex items-center justify-center min-h-full p-2">
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <canvas ref={canvasRef} style={{ display: 'block', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', transition: 'opacity 0.3s ease' }} />
+              <canvas ref={overlayRef} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'auto', cursor: 'crosshair' }} />
+            </div>
           </div>
         )}
         {showTextInput && textPos && (

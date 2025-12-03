@@ -2,7 +2,13 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FIAE Learn" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>FIAE Lernplattform – GA2 & WISO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -93,9 +99,10 @@
 }
 </script>
 <link rel="stylesheet" href="/index.css">
+<script src="/register-sw.js"></script>
 </head>
-  <body class="bg-gray-50 text-gray-900 transition-colors duration-200 dark:bg-gray-900 dark:text-gray-100 antialiased">
-    <div id="root"></div>
+  <body style="margin: 0; padding: 0;" class="bg-gray-50 text-gray-900 transition-colors duration-200 dark:bg-gray-900 dark:text-gray-100 antialiased">
+    <div id="root" style="margin: 0; padding: 0; width: 100vw; height: 100vh;"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -1,11 +1,19 @@
 
-import React, { useState, useMemo, Suspense, useCallback } from 'react';
+import React, { useState, useMemo, Suspense, useCallback, useEffect } from 'react';
 import { LESSONS } from './constants';
 import { CourseType } from './types';
 // MasterFile is lazy-loaded to reduce initial bundle size
 import InfoPanels from './components/InfoPanels';
 import Toast, { ToastMessage } from './components/Toast';
+import { getLessonProgress, toggleLessonComplete, updateLessonAccess, getProgressByType, addStudyTime, getStudyStats } from './utils/progress';
+import { isBookmarked, toggleBookmark, getLessonNote, saveLessonNote } from './utils/bookmarks';
+import { searchLessons, saveRecentSearch } from './utils/search';
 const PdfFiles = React.lazy(() => import('./components/PdfFiles'));
+const SearchModal = React.lazy(() => import('./components/SearchModal'));
+const StatsModal = React.lazy(() => import('./components/StatsModal'));
+const QuizModal = React.lazy(() => import('./components/QuizModal'));
+const FlashcardModal = React.lazy(() => import('./components/FlashcardModal'));
+const ExamSimulation = React.lazy(() => import('./components/ExamSimulation'));
 
 // Simple Skeleton for Accordion Content
 const MasterFileSkeleton = () => (
@@ -25,9 +33,25 @@ const MasterFile = React.lazy(() => import('./components/MasterFile'));
 const App: React.FC = () => {
   const [activeType, setActiveType] = useState<CourseType>('GA2');
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    // Check system preference or localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('darkMode');
+      if (saved !== null) return saved === 'true';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showPdfPage, setShowPdfPage] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showStats, setShowStats] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [showFlashcards, setShowFlashcards] = useState(false);
+  const [showExam, setShowExam] = useState(false);
+  const [lessonStartTime, setLessonStartTime] = useState<Record<string, number>>({});
+  const [progressRefresh, setProgressRefresh] = useState(0);
 
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now().toString();
@@ -49,31 +73,151 @@ const App: React.FC = () => {
 
   // Toggle Dark Mode
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    if (!darkMode) {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('darkMode', String(newMode));
+    if (newMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
   };
 
+  // Apply dark mode on mount
+  React.useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  // Study timer: track time when lesson is expanded
+  useEffect(() => {
+    if (expandedLessonId) {
+      updateLessonAccess(expandedLessonId);
+      setLessonStartTime(prev => ({ ...prev, [expandedLessonId]: Date.now() }));
+      
+      const interval = setInterval(() => {
+        const startTime = lessonStartTime[expandedLessonId];
+        if (startTime) {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          if (elapsed > 0 && elapsed % 30 === 0) {
+            // Save every 30 seconds
+            addStudyTime(expandedLessonId, 30);
+          }
+        }
+      }, 1000);
+      
+      return () => {
+        clearInterval(interval);
+        const startTime = lessonStartTime[expandedLessonId];
+        if (startTime) {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          if (elapsed > 0) {
+            addStudyTime(expandedLessonId, elapsed);
+          }
+        }
+      };
+    }
+  }, [expandedLessonId]);
+
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-200 flex flex-col`}>
+    <div className={`h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-200 flex flex-col`}>
        <Toast toasts={toasts} onRemove={removeToast} />
        
        {/* Header / Nav */}
-       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 no-print shadow-sm">
-         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-50 no-print shadow-sm flex-shrink-0">
+         <div className="px-4 h-12 flex items-center justify-between">
+            <div className="flex items-center gap-4">
                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold ${activeType === 'GA2' ? 'bg-blue-600' : 'bg-emerald-600'}`}>
                  F
                </div>
                <h1 className="text-lg md:text-xl font-bold tracking-tight">
                  FIAE <span className="text-gray-500 dark:text-gray-400">Lernplattform</span>
                </h1>
+               
+               {/* Course Type Tabs in Header */}
+               <div className="hidden md:flex items-center gap-1 ml-4">
+                 {(['GA2', 'WISO', 'PRUEF'] as CourseType[]).map((type) => {
+                   const progress = getProgressByType(type, LESSONS.filter(l => l.type === type).length);
+                   return (
+                     <button
+                       key={type}
+                       onClick={() => { 
+                         setActiveType(type); 
+                         setExpandedLessonId(null); 
+                         setShowPdfPage(false);
+                       }}
+                       className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                         activeType === type
+                           ? (type === 'GA2' ? 'bg-blue-600 text-white shadow' : type === 'WISO' ? 'bg-emerald-600 text-white shadow' : 'bg-purple-600 text-white shadow')
+                           : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                       }`}
+                     >
+                       <span className="flex items-center gap-1.5">
+                         {type === 'PRUEF' ? 'Prüfung' : type}
+                         {progress.percentage > 0 && (
+                           <span className="text-xs opacity-75">({progress.percentage}%)</span>
+                         )}
+                       </span>
+                     </button>
+                   );
+                 })}
+               </div>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+               {/* Search Button */}
+               <button
+                onClick={() => setShowSearch(true)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Search"
+                title="Suchen"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </button>
+              
+               {/* Stats Button */}
+               <button
+                onClick={() => setShowStats(true)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Statistics"
+                title="Statistik"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              </button>
+              
+               {/* Quiz Button */}
+               <button
+                onClick={() => setShowQuiz(true)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Quiz"
+                title="Quiz"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </button>
+              
+               {/* Flashcards Button */}
+               <button
+                onClick={() => setShowFlashcards(true)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Flashcards"
+                title="Karteikarten"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+              </button>
+              
+               {/* Exam Simulation Button */}
+               <button
+                onClick={() => setShowExam(true)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Exam Simulation"
+                title="Prüfungssimulation"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              </button>
+              
                {/* Dark Mode Toggle */}
                <button
                 onClick={toggleDarkMode}
@@ -92,46 +236,38 @@ const App: React.FC = () => {
                 className="px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                 title="PDF Files"
               >
-                PDF Files
+                📄 PDF
               </button>
             </div>
          </div>
        </header>
 
-       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+       <main className="flex-1 overflow-y-auto">
          
-         {/* Course Type Tabs */}
-         <div className="flex justify-center mb-8 no-print">
-            <div className="bg-white dark:bg-gray-800 p-1 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 inline-flex">
-               {(['GA2', 'WISO', 'PRUEF'] as CourseType[]).map((type) => (
-                 <button
-                   key={type}
-                   onClick={() => { setActiveType(type); setExpandedLessonId(null); }}
-                   className={`px-6 md:px-8 py-2 rounded-lg text-sm font-semibold transition-all ${
-                     activeType === type
-                       ? (type === 'GA2' ? 'bg-blue-600 text-white shadow' : type === 'WISO' ? 'bg-emerald-600 text-white shadow' : 'bg-purple-600 text-white shadow')
-                       : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
-                   }`}
-                 >
-                   {type === 'PRUEF' ? 'Prüfung' : type}
-                 </button>
-               ))}
-            </div>
-         </div>
-
-         {/* Hero Header */}
-         <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
-              {activeType === 'GA2' ? 'Algorithmen & Entwicklung' : activeType === 'WISO' ? 'Wirtschaft & Soziales' : 'Prüfungssimulation'}
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              {activeType === 'GA2' 
-                ? 'Meistern Sie Pseudocode, Struktogramme und komplexe Algorithmen für die Abschlussprüfung.'
-                : activeType === 'WISO'
-                  ? 'Alles Wichtige zu Arbeitsrecht, Betriebsrat, Verträgen und Sozialversicherungen.'
-                  : 'Beispielprüfungen und typische Aufgaben aus IHK-Prüfungen (mit Erklärungen auf Deutsch und Persisch).'}
-            </p>
-         </div>
+         {/* Progress Bar */}
+         {(() => {
+           const progress = getProgressByType(activeType, filteredLessons.length);
+           return progress.percentage > 0 ? (
+             <div className="no-print bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+               <div className="px-4 py-2">
+                 <div className="max-w-3xl mx-auto">
+                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                     <span>Fortschritt: {progress.completed} von {filteredLessons.length}</span>
+                     <span className="font-semibold">{progress.percentage}%</span>
+                   </div>
+                   <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                     <div 
+                       className={`h-full transition-all duration-500 ${
+                         activeType === 'GA2' ? 'bg-blue-600' : activeType === 'WISO' ? 'bg-emerald-600' : 'bg-purple-600'
+                       }`}
+                       style={{ width: `${progress.percentage}%` }}
+                     />
+                   </div>
+                 </div>
+               </div>
+             </div>
+           ) : null;
+         })()}
 
          {showPdfPage ? (
            <div className="space-y-4">
@@ -144,8 +280,8 @@ const App: React.FC = () => {
              <InfoPanels type={activeType} />
 
              {/* Accordion List */}
-             <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
+             <div className="space-y-3 max-w-5xl mx-auto px-4">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2 mb-3">
                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                  Lektionen ({filteredLessons.length})
                </h3>
@@ -156,6 +292,9 @@ const App: React.FC = () => {
                const isGA2 = lesson.type === 'GA2';
                const isWISO = lesson.type === 'WISO';
                const isPRUEF = lesson.type === 'PRUEF';
+               const lessonProgress = getLessonProgress(lesson.id);
+               const isCompleted = lessonProgress?.completed || false;
+               const isBookmarkedLesson = isBookmarked(lesson.id);
                
                // Dynamic Styles based on type and state
                const activeBorderClass = isGA2
@@ -187,38 +326,81 @@ const App: React.FC = () => {
                    className={`rounded-xl border transition-all duration-300 overflow-hidden group ${bgClass} ${isActive ? activeBorderClass : `border-gray-200 dark:border-gray-700 ${hoverClass}`}`}
                    style={{ animationDelay: `${index * 50}ms` }}
                  >
-                   <button 
-                     onClick={() => toggleLesson(lesson.id)}
-                     className="w-full text-left p-5 flex items-center justify-between focus:outline-none"
-                   >
-                     <div className="flex-1 pr-4">
-                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${badgeBg} ${darkBadgeBg}`}>
-                          {lesson.type === 'PRUEF' ? 'Prüfung' : lesson.type}
-                        </span>
-                         <span className="text-xs text-gray-400 font-mono">#{lesson.order}</span>
-                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
-                           {lesson.level}
-                         </span>
+                   <div className="flex items-center">
+                     <button 
+                       onClick={() => toggleLesson(lesson.id)}
+                       className="flex-1 text-left p-5 flex items-center justify-between focus:outline-none"
+                     >
+                       <div className="flex-1 pr-4">
+                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${badgeBg} ${darkBadgeBg}`}>
+                            {lesson.type === 'PRUEF' ? 'Prüfung' : lesson.type}
+                          </span>
+                           <span className="text-xs text-gray-400 font-mono">#{lesson.order}</span>
+                           <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                             {lesson.level}
+                           </span>
+                           {isCompleted && (
+                             <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded flex items-center gap-1">
+                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                               Abgeschlossen
+                             </span>
+                           )}
+                           {isBookmarkedLesson && (
+                             <span className="text-xs">⭐</span>
+                           )}
+                         </div>
+                        <h3 className={`text-lg font-bold transition-colors ${isActive ? (isGA2 ? 'text-blue-600 dark:text-blue-400' : isWISO ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400') : 'text-gray-900 dark:text-white'}`}>
+                          {lesson.title}
+                        </h3>
+                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                           {lesson.subtitle}
+                         </p>
                        </div>
-                      <h3 className={`text-lg font-bold transition-colors ${isActive ? (isGA2 ? 'text-blue-600 dark:text-blue-400' : isWISO ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400') : 'text-gray-900 dark:text-white'}`}>
-                        {lesson.title}
-                      </h3>
-                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                         {lesson.subtitle}
-                       </p>
-                     </div>
 
-                     <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 
-                       ${isActive 
-                         ? `${iconActiveBg} text-white shadow-sm rotate-180` 
-                         : `bg-gray-100 dark:bg-gray-700 text-gray-400 ${iconHoverText} ${iconHoverBg}`
-                       }`}>
-                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                       </svg>
+                       <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 
+                         ${isActive 
+                           ? `${iconActiveBg} text-white shadow-sm rotate-180` 
+                           : `bg-gray-100 dark:bg-gray-700 text-gray-400 ${iconHoverText} ${iconHoverBg}`
+                         }`}>
+                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                         </svg>
+                       </div>
+                     </button>
+                     
+                     {/* Action Buttons */}
+                     <div className="flex items-center gap-1 pr-3">
+                       <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           toggleLessonComplete(lesson.id);
+                           setProgressRefresh(prev => prev + 1);
+                           addToast(isCompleted ? 'Als nicht abgeschlossen markiert' : 'Als abgeschlossen markiert ✓', 'success');
+                         }}
+                         className={`p-2 rounded-lg transition-colors ${isCompleted ? 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                         title={isCompleted ? 'Als nicht abgeschlossen markieren' : 'Als abgeschlossen markieren'}
+                       >
+                         <svg className="w-5 h-5" fill={isCompleted ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                         </svg>
+                       </button>
+                       <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           toggleBookmark(lesson.id);
+                           setProgressRefresh(prev => prev + 1);
+                           addToast(isBookmarkedLesson ? 'Lesezeichen entfernt' : 'Lesezeichen hinzugefügt 🔖', 'success');
+                         }}
+                         className={`p-2 rounded-lg transition-colors ${isBookmarkedLesson ? 'text-yellow-500 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/30' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                         title={isBookmarkedLesson ? 'Lesezeichen entfernen' : 'Lesezeichen hinzufügen'}
+                       >
+                         <svg className="w-5 h-5" fill={isBookmarkedLesson ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                         </svg>
+                       </button>
                      </div>
-                   </button>
+                   </div>
 
                    {/* Content Area */}
                    {isActive && (
@@ -237,16 +419,60 @@ const App: React.FC = () => {
        </main>
 
        {/* Footer */}
-       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 mt-auto no-print">
+       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-2 mt-auto no-print">
         <div className="max-w-5xl mx-auto px-4 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
-            © 2024 FIAE Lernplattform (GA2 & WISO)
-          </p>
-          <p className="text-xs text-gray-400">
-            Entwickelt für Fachinformatiker Anwendungsentwicklung.
+          <p className="text-gray-500 dark:text-gray-400 text-xs">
+            © 2024 FIAE Lernplattform (GA2 & WISO) • Entwickelt für Fachinformatiker Anwendungsentwicklung.
           </p>
         </div>
       </footer>
+      
+      {/* Modals */}
+      {showSearch && (
+        <Suspense fallback={null}>
+          <SearchModal
+            lessons={LESSONS}
+            onClose={() => setShowSearch(false)}
+            onSelectLesson={(lessonId) => {
+              setExpandedLessonId(lessonId);
+              const lesson = LESSONS.find(l => l.id === lessonId);
+              if (lesson) {
+                setActiveType(lesson.type);
+              }
+            }}
+          />
+        </Suspense>
+      )}
+      
+      {showStats && (
+        <Suspense fallback={null}>
+          <StatsModal onClose={() => setShowStats(false)} />
+        </Suspense>
+      )}
+      
+      {showQuiz && (
+        <Suspense fallback={null}>
+          <QuizModal
+            category={activeType}
+            onClose={() => setShowQuiz(false)}
+          />
+        </Suspense>
+      )}
+      
+      {showFlashcards && (
+        <Suspense fallback={null}>
+          <FlashcardModal
+            category={activeType}
+            onClose={() => setShowFlashcards(false)}
+          />
+        </Suspense>
+      )}
+      
+      {showExam && (
+        <Suspense fallback={null}>
+          <ExamSimulation onClose={() => setShowExam(false)} />
+        </Suspense>
+      )}
     </div>
   );
 };
