@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IHK – Prüfungsseite (Algorithmen): Jahresstatistik – Pseudocode, Tests, Beschreibung</title>
+<style>
+  :root { --bg:#ffffff; --fg:#111; --muted:#666; --border:#e5e7eb; --card:#f9fafb; --tip:#eef6ff; }
+  html,body{background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:0}
+  main{max-width:960px;margin:28px auto;padding:0 18px 60px}
+  h1{font-size:26px;margin:0 0 10px}
+  h2{font-size:20px;margin:22px 0 8px;border-bottom:1px solid var(--border);padding-bottom:6px}
+  h3{font-size:18px;margin:16px 0 8px}
+  p{margin:8px 0}
+  .muted{color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:12px 0}
+  .tip{background:var(--tip);border-left:4px solid #3a86ff}
+  code, pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;color:#000}
+  pre{background:none;border:1px solid var(--border);border-radius:8px;padding:10px 12px;overflow:auto}
+  table{width:100%;border-collapse:collapse;margin:10px 0}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#fafafa}
+  ul{margin-top:6px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:860px){.two{grid-template-columns:1fr}}
+  .footer{margin-top:36px;font-size:13px;color:var(--muted)}
+  @media print{
+    .tip{border-left-color:#000}
+    a[href]:after{content:" (" attr(href) ")"; font-size:12px; color:#666;}
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>IHK – Prüfungsseite (Algorithmen): <em>Jahresstatistik</em></h1>
+  <p class="muted">Druckfreundlich · Java‑ähnlicher Pseudocode · enthält Aufgabenstellung, Lösung, Tests, kurze Beschreibung</p>
+
+  <h2>1) Aufgabenstellung (IHK‑Stil)</h2>
+  <div class="card">
+    <p>Entwickeln Sie eine Funktion <code>ermittleJahresstatistik(int[][] verbrauch)</code>, die für ein Kalenderjahr den
+    <strong>minimalen</strong> und <strong>maximalen Monatsverbrauch</strong> ermittelt. Das zweidimensionale Array
+    <code>verbrauch[monat][tag]</code> enthält die Tageswerte je Monat. Geben Sie das Ergebnis als Objekt der Klasse
+    <code>Jahresstatistik</code> zurück.</p>
+  </div>
+
+  <h2>2) Klasse <code>Jahresstatistik</code></h2>
+  <pre><code>Klasse Jahresstatistik
+    Attribute:
+        minVerbrauch : Integer
+        maxVerbrauch : Integer
+
+    Konstruktor Jahresstatistik(min : Integer, max : Integer)
+        self.minVerbrauch = min
+        self.maxVerbrauch = max
+    Ende Konstruktor
+
+    Methode getMinVerbrauch() : Integer
+        Rückgabe minVerbrauch
+    Ende Methode
+
+    Methode getMaxVerbrauch() : Integer
+        Rückgabe maxVerbrauch
+    Ende Methode
+Ende Klasse</code></pre>
+
+  <h2>3) Lösung – Funktion (Pseudocode)</h2>
+  <pre><code>Funktion ermittleJahresstatistik(verbrauch : Integer[][]) : Jahresstatistik
+    // Schutz: leeres Jahr → 0/0
+    Wenn verbrauch.length = 0 dann
+        Rückgabe NEUE Jahresstatistik(0, 0)
+    Ende Wenn
+
+    Deklariere min : Integer = MAX_WERT
+    Deklariere max : Integer = MIN_WERT
+
+    // Äußere Schleife: Monate
+    Für m = 0 bis verbrauch.length - 1
+        summe = 0
+
+        // Innere Schleife: Tage summieren
+        Für t = 0 bis verbrauch[m].length - 1
+            summe = summe + verbrauch[m][t]
+        Ende Für
+
+        // Min/Max aktualisieren
+        Wenn summe < min dann min = summe Ende Wenn
+        Wenn summe > max dann max = summe Ende Wenn
+    Ende Für
+
+    // Objekt mit beiden Werten zurückgeben
+    Rückgabe NEUE Jahresstatistik(min, max)
+Ende Funktion</code></pre>
+
+  <h2>4) Testdaten &amp; erwartete Ergebnisse</h2>
+  <table>
+    <thead>
+      <tr><th>Nr.</th><th>Eingabe (Monate × Tage)</th><th>Zwischensummen pro Monat</th><th>Erwartung</th><th>Begründung</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>[[30,25,28],[40,35,42],[20,18,22]]</code></td>
+        <td>Monat1: 83, Monat2: 117, Monat3: 60</td>
+        <td><strong>min=60</strong>, <strong>max=117</strong></td>
+        <td>Kleinste Summe = 60 (Monat3), größte = 117 (Monat2)</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>[[10,10,10],[5,5,5],[20,20,20]]</code></td>
+        <td>Monat1: 30, Monat2: 15, Monat3: 60</td>
+        <td><strong>min=15</strong>, <strong>max=60</strong></td>
+        <td>Kleinste Summe = 15, größte = 60</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>[[],[7,3],[1]]</code></td>
+        <td>Monat1: 0 (leer), Monat2: 10, Monat3: 1</td>
+        <td><strong>min=0</strong>, <strong>max=10</strong></td>
+        <td>Leere Monate zählen als 0 – Option ist dokumentiert</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>5) Kurzbeschreibung (Programmlogik)</h2>
+  <div class="card">
+    <p>Die Funktion iteriert über alle Monate, summiert deren Tageswerte zu einer Monatssumme und vergleicht diese mit den bisher
+    gefundenen Minimal- und Maximalwerten. Abschließend werden beide Werte in einem Objekt <code>Jahresstatistik</code> gebündelt
+    und zurückgegeben.</p>
+  </div>
+
+  <h2>6) Einbindung im Hauptprogramm (optional)</h2>
+  <pre><code>verbrauch = [[30,25,28],[40,35,42],[20,18,22]]
+statistik = ermittleJahresstatistik(verbrauch)
+AUSGABE "Min: " + statistik.getMinVerbrauch()
+AUSGABE "Max: " + statistik.getMaxVerbrauch()</code></pre>
+
+  <h2>7) Punktebringer / Hinweise</h2>
+  <ul>
+    <li>Saubere Struktur: äußere/innere Schleife klar kommentieren.</li>
+    <li>Startwerte <code>MAX_WERT</code>/<code>MIN_WERT</code> für Min/Max nennen.</li>
+    <li>Objektrückgabe zeigen: <code>NEUE Jahresstatistik(min, max)</code>.</li>
+    <li>Kurze Logikbeschreibung + Testtabelle hinzufügen.</li>
+  </ul>
+
+  <p class="footer">Druckfreundlich – Tipp: Browser → Drucken → Als PDF speichern.</p>
+</main>
+</body>
+</html>

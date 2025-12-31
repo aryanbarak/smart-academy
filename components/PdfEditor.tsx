@@ -24,8 +24,20 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Array<{ pageNum: number; text: string }>>([]);
   const [showSearch, setShowSearch] = useState(false);
+  const [highlightMatches, setHighlightMatches] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [continuous, setContinuous] = useState(() => {
+    try {
+      const v = localStorage.getItem('fiae_pdf_continuous');
+      return v ? v === 'true' : true; // default to continuous
+    } catch {
+      return true;
+    }
+  });
+  const [thumbsOpen, setThumbsOpen] = useState(true);
+  const [gotoInput, setGotoInput] = useState<string>('');
 
   // pagesOrder holds either number (original page 1-based) or 'blank'
   const [pagesOrder, setPagesOrder] = useState<Array<number | 'blank'>>([]);
@@ -59,7 +71,7 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
         setLoadProgress(10);
         const pdfjs = await import('pdfjs-dist/legacy/build/pdf');
         // Import worker as module instead of external URL for offline support
-        const pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs?url');
+        const pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.min.js?url');
         (pdfjs as any).GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
         console.debug('[PdfEditor] worker configured for offline use');
         setLoadProgress(30);
@@ -117,6 +129,77 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdfDoc, pageIndex, scale, pagesOrder]);
+
+  // Auto fit to width on small screens for better readability
+  useEffect(() => {
+    const isSmall = window.innerWidth < 768;
+    if (!isSmall) return;
+    const doFit = async () => {
+      const container = containerRef.current;
+      if (!container || !pdfDoc || pagesOrder.length === 0) return;
+      const mapping = pagesOrder[pageIndex];
+      const pageNum = mapping === 'blank' ? 1 : (mapping as number);
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const containerWidth = container.clientWidth - 24; // padding
+        if (baseViewport.width > 0 && containerWidth > 0) {
+          const computedScale = containerWidth / baseViewport.width;
+          setScale(Math.max(0.85, Math.min(3, +computedScale.toFixed(2))));
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    // try after initial render
+    const t = setTimeout(doFit, 300);
+    window.addEventListener('resize', doFit);
+    return () => { clearTimeout(t); window.removeEventListener('resize', doFit); };
+  }, [pdfDoc, pageIndex]);
+
+  // Basic pinch-zoom support for touch devices
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let initialDistance = 0;
+    let initialScale = scale;
+
+    const getDistance = (touches: TouchList) => {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx*dx + dy*dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        initialDistance = getDistance(e.touches);
+        initialScale = scale;
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && initialDistance > 0) {
+        e.preventDefault();
+        const currentDistance = getDistance(e.touches);
+        const factor = currentDistance / initialDistance;
+        const newScale = Math.max(0.6, Math.min(3, +(initialScale * factor).toFixed(2)));
+        setScale(newScale);
+      }
+    };
+    const onTouchEnd = () => {
+      initialDistance = 0;
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchcancel', onTouchEnd);
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart as any);
+      el.removeEventListener('touchmove', onTouchMove as any);
+      el.removeEventListener('touchend', onTouchEnd as any);
+      el.removeEventListener('touchcancel', onTouchEnd as any);
+    };
+  }, [scale]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -176,6 +259,25 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [pagesOrder.length, showTextInput, onClose]);
 
+  // Mouse wheel to navigate pages (smooth UX for scrolling)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      // If content is scrollable vertically, allow default scrolling
+      const canScroll = el.scrollHeight > el.clientHeight;
+      if (canScroll) return;
+      // Otherwise, map wheel to page navigation
+      if (e.deltaY > 0) {
+        setPageIndex(prev => Math.min(pagesOrder.length - 1, prev + 1));
+      } else if (e.deltaY < 0) {
+        setPageIndex(prev => Math.max(0, prev - 1));
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: true });
+    return () => el.removeEventListener('wheel', onWheel as any);
+  }, [pagesOrder.length]);
+
   const renderCurrentPage = async () => {
     if (!pdfDoc || !canvasRef.current) return;
     if (!pagesOrder || pagesOrder.length === 0) {
@@ -213,6 +315,49 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
     await pdfPage.render({ canvasContext: ctx, viewport }).promise;
     console.log('✅ Page rendered successfully! Canvas size:', canvas.width, 'x', canvas.height);
     restoreOverlayForIndex(pageIndex);
+
+    // Draw search highlights on the current page (single-page mode)
+    try {
+      if (highlightMatches && searchQuery.trim()) {
+        const textContent: any = await pdfPage.getTextContent();
+        const q = searchQuery.toLowerCase();
+        const items = textContent.items || [];
+        const transforms = textContent.styles || {};
+        const ctx2 = overlayRef.current?.getContext('2d');
+        if (ctx2 && overlayRef.current) {
+          // Ensure overlay matches canvas size
+          overlayRef.current.width = canvas.width;
+          overlayRef.current.height = canvas.height;
+          ctx2.save();
+          ctx2.globalAlpha = 0.25;
+          ctx2.fillStyle = '#fbbf24'; // amber
+          items.forEach((item: any) => {
+            const str = String(item.str || '');
+            if (!str) return;
+            const lower = str.toLowerCase();
+            const pos = lower.indexOf(q);
+            if (pos >= 0) {
+              // Approximate bounding box based on transform
+              const tx = item.transform || item.textMatrix || [1,0,0,1,0,0];
+              const x = tx[4];
+              const y = tx[5];
+              const fontSize = Math.abs(tx[3] || 12);
+              const width = fontSize * q.length * 0.6; // heuristic
+              const height = fontSize;
+              // pdf coords to canvas coords
+              const ctm = viewport.transform;
+              const cx = ctm[0]*x + ctm[2]*y + ctm[4];
+              const cy = ctm[1]*x + ctm[3]*y + ctm[5];
+              const top = canvas.height - cy - height;
+              ctx2.fillRect(cx, top, width, height);
+            }
+          });
+          ctx2.restore();
+        }
+      }
+    } catch (e) {
+      console.warn('Search highlight failed:', e);
+    }
   };
 
   // drawing handlers for 'draw' and click handlers for text/redact
@@ -289,6 +434,24 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
   const movePage = (from: number, to: number) => { const arr = [...pagesOrder]; const item = arr.splice(from,1)[0]; arr.splice(to,0,item); setPagesOrder(arr); setPageIndex(Math.max(0, Math.min(arr.length-1, to))); };
 
   const onZoom = (delta: number) => { setScale(s => Math.max(0.5, Math.min(3, +(s + delta).toFixed(2)))); };
+
+  // Double-tap zoom for touch devices: toggle between fit-to-width and 150%
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let lastTap = 0;
+    const onDblTap = (e: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        e.preventDefault();
+        // toggle zoom levels
+        setScale(prev => (prev < 1.2 ? 1.5 : 1.0));
+      }
+      lastTap = now;
+    };
+    el.addEventListener('touchend', onDblTap, { passive: false });
+    return () => el.removeEventListener('touchend', onDblTap as any);
+  }, []);
 
   // Search functionality
   const performSearch = async () => {
@@ -399,13 +562,13 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
   return (
     <div className="h-full w-full flex flex-col bg-white dark:bg-gray-800 pdf-viewer-container">
       {!loadErrorMsg && pdfDoc && (
-        <div className="flex items-center justify-between gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPageIndex(prev => Math.max(0, prev - 1))}
                 disabled={pageIndex === 0}
-                className="px-1.5 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed min-h-[36px] min-w-[36px]"
                 title="Vorherige Seite"
               >
                 ◄
@@ -416,16 +579,41 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
               <button
                 onClick={() => setPageIndex(prev => Math.min(pagesOrder.length - 1, prev + 1))}
                 disabled={pageIndex >= pagesOrder.length - 1}
-                className="px-1.5 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed min-h-[36px] min-w-[36px]"
                 title="Nächste Seite"
               >
                 ►
               </button>
+              <div className="ml-2 flex items-center gap-1">
+                <label className="text-xs text-gray-600 dark:text-gray-300">Gehe zu:</label>
+                <input
+                  value={gotoInput}
+                  onChange={(e) => setGotoInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { const n = parseInt(gotoInput, 10); if (!isNaN(n)) setPageIndex(Math.max(0, Math.min(pagesOrder.length - 1, n - 1))); } }}
+                  className="w-14 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-200"
+                  placeholder="z.B. 3"
+                  title="Gehe zur Seite"
+                />
+              </div>
             </div>
             <div className="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
             <button
+              onClick={() => setContinuous(c => { const nv = !c; try { localStorage.setItem('fiae_pdf_continuous', String(nv)); } catch {} return nv; })}
+              className={`px-3 py-2 text-xs border rounded ${continuous ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500'} min-h-[36px]`}
+              title="Durchlaufender Modus"
+            >
+              {continuous ? 'Kontinuierlich' : 'Seite für Seite'}
+            </button>
+            <button
+              onClick={() => setThumbsOpen(t => !t)}
+              className="px-3 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 min-h-[36px]"
+              title="Miniaturansichten ein/aus"
+            >
+              {thumbsOpen ? 'Thumbnails aus' : 'Thumbnails an'}
+            </button>
+            <button
               onClick={() => onZoom(-0.25)}
-              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              className="px-3 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 min-h-[36px] min-w-[36px]"
               title="Zoom Out (−)"
             >
               −
@@ -435,7 +623,7 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
             </span>
             <button
               onClick={() => onZoom(0.25)}
-              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              className="px-3 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 min-h-[36px] min-w-[36px]"
               title="Zoom In (+)"
             >
               +
@@ -452,7 +640,7 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
                 const newScale = containerWidth / canvas.width * scale;
                 setScale(Math.max(0.5, Math.min(3, +newScale.toFixed(2))));
               }}
-              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              className="px-3 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 min-h-[36px]"
               title="Fit to Width"
             >
               Breite
@@ -467,14 +655,14 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
                 const newScale = containerHeight / canvas.height * scale;
                 setScale(Math.max(0.5, Math.min(3, +newScale.toFixed(2))));
               }}
-              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              className="px-3 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 min-h-[36px]"
               title="Fit to Height"
             >
               Höhe
             </button>
             <button
               onClick={() => setScale(1.0)}
-              className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+              className="px-3 py-2 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 min-h-[36px]"
               title="Reset to 100%"
             >
               100%
@@ -482,7 +670,7 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
           </div>
         </div>
       )}
-      <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+      <div ref={containerRef} className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
         {loadErrorMsg ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="text-6xl mb-4">⚠️</div>
@@ -509,10 +697,27 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center min-h-full p-2">
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <canvas ref={canvasRef} style={{ display: 'block', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', transition: 'opacity 0.3s ease' }} />
-              <canvas ref={overlayRef} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'auto', cursor: 'crosshair' }} />
+          <div className="flex">
+            {thumbsOpen && (
+              <div className="w-28 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2 overflow-auto">
+                <Thumbnails pdfDoc={pdfDoc} pagesOrder={pagesOrder} currentIdx={pageIndex} onJump={(n) => setPageIndex(n)} />
+              </div>
+            )}
+            <div className="flex-1 flex">
+              {continuous ? (
+                <div className="min-h-full p-2 space-y-4 flex-1">
+                  {pagesOrder.map((mapping, idx) => (
+                    <LazyPage key={idx} pdfDoc={pdfDoc} mapping={mapping} index={idx} scale={scale} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center min-h-full p-2 flex-1">
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <canvas ref={canvasRef} style={{ display: 'block', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', transition: 'opacity 0.3s ease' }} />
+                    <canvas ref={overlayRef} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'auto', cursor: 'crosshair' }} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -527,3 +732,159 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
 };
 
 export default PdfEditor;
+
+// Simple page component for continuous rendering (no overlay/annotation in this mode)
+const PageItem: React.FC<{ pdfDoc: any; mapping: number | 'blank'; scale: number }> = ({ pdfDoc, mapping, scale }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const render = async () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d')!;
+      if (mapping === 'blank') {
+        const w = Math.floor(595 * scale);
+        const h = Math.floor(842 * scale);
+        canvas.width = w; canvas.height = h;
+        canvas.style.width = `${w / scale}px`;
+        canvas.style.height = `${h / scale}px`;
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+        return;
+      }
+      const page = await pdfDoc.getPage(mapping as number);
+      const viewport = page.getViewport({ scale });
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    };
+    render();
+  }, [pdfDoc, mapping, scale]);
+  return (
+    <div className="flex items-center justify-center">
+      <canvas ref={canvasRef} style={{ display: 'block', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+    </div>
+  );
+};
+
+// Lazy page renderer with IntersectionObserver and bitmap cache
+// Use scale bucket to avoid stale images after zoom changes
+const pageBitmapCache: Map<string, string> = new Map();
+
+const LazyPage: React.FC<{ pdfDoc: any; mapping: number | 'blank'; index: number; scale: number }> = ({ pdfDoc, mapping, index, scale }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const holderRef = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = holderRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          setVisible(true);
+        }
+      }
+    }, { root: null, rootMargin: '200px 0px', threshold: 0.01 });
+    io.observe(el);
+    return () => { io.disconnect(); };
+  }, []);
+
+  useEffect(() => {
+    const render = async () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d')!;
+      if (mapping === 'blank') {
+        const w = Math.floor(595 * scale);
+        const h = Math.floor(842 * scale);
+        canvas.width = w; canvas.height = h;
+        canvas.style.width = `${w / scale}px`;
+        canvas.style.height = `${h / scale}px`;
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+        const key = `${index}@${Math.round(scale*100)}`;
+        pageBitmapCache.set(key, canvas.toDataURL('image/png'));
+        return;
+      }
+
+      // If cached bitmap exists for this index and approximate scale, draw it quickly
+      const key = `${index}@${Math.round(scale*100)}`;
+      const cached = pageBitmapCache.get(key);
+      if (cached) {
+        const img = new Image();
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.style.width = `${img.width}px`;
+          canvas.style.height = `${img.height}px`;
+          ctx.drawImage(img, 0, 0);
+        };
+        img.src = cached;
+        // continue to render fresh in background if scale changed significantly
+      }
+
+      const page = await pdfDoc.getPage(mapping as number);
+      const viewport = page.getViewport({ scale });
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      try {
+        pageBitmapCache.set(key, canvas.toDataURL('image/png'));
+      } catch {}
+    };
+    if (visible) { render(); }
+  }, [pdfDoc, mapping, scale, visible, index]);
+
+  return (
+    <div ref={holderRef} className="flex items-center justify-center min-h-[200px]">
+      {visible ? (
+        <canvas ref={canvasRef} style={{ display: 'block', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+      ) : (
+        <div className="w-full max-w-[800px] h-40 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+      )}
+    </div>
+  );
+};
+
+// Thumbnails list: renders small previews; clicking jumps to page
+const Thumbnails: React.FC<{ pdfDoc: any; pagesOrder: Array<number|'blank'>; currentIdx: number; onJump: (idx: number) => void }> = ({ pdfDoc, pagesOrder, currentIdx, onJump }) => {
+  return (
+    <div className="space-y-2">
+      {pagesOrder.map((mapping, idx) => (
+        <ThumbItem key={idx} pdfDoc={pdfDoc} mapping={mapping} active={idx === currentIdx} onClick={() => onJump(idx)} />
+      ))}
+    </div>
+  );
+};
+
+const ThumbItem: React.FC<{ pdfDoc: any; mapping: number|'blank'; active: boolean; onClick: () => void }> = ({ pdfDoc, mapping, active, onClick }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const render = async () => {
+      const canvas = canvasRef.current; if (!canvas) return;
+      const ctx = canvas.getContext('2d')!;
+      const scale = 0.25; // small preview
+      if (mapping === 'blank') {
+        const w = Math.floor(595 * scale), h = Math.floor(842 * scale);
+        canvas.width = w; canvas.height = h; canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+        return;
+      }
+      const page = await pdfDoc.getPage(mapping as number);
+      const viewport = page.getViewport({ scale });
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    };
+    render();
+  }, [pdfDoc, mapping]);
+  return (
+    <button onClick={onClick} className={`block rounded border ${active ? 'border-blue-500' : 'border-gray-300 dark:border-gray-600'} overflow-hidden w-full`} title={typeof mapping === 'number' ? `Seite ${mapping}` : 'Leer'}>
+      <canvas ref={canvasRef} />
+    </button>
+  );
+};

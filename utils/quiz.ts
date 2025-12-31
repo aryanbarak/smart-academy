@@ -155,7 +155,12 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
 // Quiz session management
 export function createQuizSession(category: 'GA2' | 'WISO' | 'PRUEF', questionCount: number = 5): QuizSession {
   const categoryQuestions = QUIZ_QUESTIONS.filter(q => q.category === category);
-  const shuffled = [...categoryQuestions].sort(() => Math.random() - 0.5);
+  // Fisher–Yates shuffle for uniform O(n) randomization
+  const shuffled = [...categoryQuestions];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   const selectedQuestions = shuffled.slice(0, Math.min(questionCount, shuffled.length));
   
   return {

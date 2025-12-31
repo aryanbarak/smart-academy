@@ -17,6 +17,7 @@ describe('App Component', () => {
 
   it('نمایش بخش لکسیون‌ها', () => {
     render(<App />);
-    expect(screen.getByText(/Lektionen/)).toBeDefined();
+    const matches = screen.getAllByText(/Lektionen/);
+    expect(matches.length).toBeGreaterThan(0);
   });
 });

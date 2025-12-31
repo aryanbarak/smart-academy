@@ -7,7 +7,7 @@ interface MasterFileProps {
   onToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const MasterFile: React.FC<MasterFileProps> = ({ lesson, onToast }) => {
+const MasterFileComponent: React.FC<MasterFileProps> = ({ lesson, onToast }) => {
   const [playingSection, setPlayingSection] = useState<number | null>(null);
   const [loadingSection, setLoadingSection] = useState<number | null>(null);
   const [simplifiedSection, setSimplifiedSection] = useState<{index: number, text: string} | null>(null);
@@ -256,4 +256,10 @@ const MasterFile: React.FC<MasterFileProps> = ({ lesson, onToast }) => {
   );
 };
 
-export default MasterFile;
+  // Memoize to avoid re-rendering when unrelated parent state changes.
+  // Re-render only if the lesson id changes.
+  const MasterFile = React.memo(MasterFileComponent, (prev, next) => {
+    return prev.lesson.id === next.lesson.id && prev.onToast === next.onToast;
+  });
+
+  export default MasterFile;

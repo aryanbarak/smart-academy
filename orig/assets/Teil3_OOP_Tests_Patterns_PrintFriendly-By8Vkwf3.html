@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IHK-Leitfaden – Teil 3: OOP, Tests & Patterns (FIAE, AP2) – Druckfreundlich</title>
+<style>
+  :root { --bg:#ffffff; --fg:#161616; --muted:#666; --card:#f7f7f7; --tip:#eef6ff; --border:#e4e4e4; }
+  html,body{background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:0}
+  main{max-width:980px;margin:28px auto;padding:0 18px 60px}
+  h1{font-size:28px;margin:0 0 12px}
+  h2{font-size:22px;margin:26px 0 10px;border-bottom:1px solid var(--border);padding-bottom:6px}
+  h3{font-size:18px;margin:18px 0 8px}
+  p{margin:8px 0}
+  .muted{color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:12px 0}
+  .tip{background:var(--tip);border-left:4px solid #3a86ff}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;color:#000}
+  pre{background:none;border:1px solid var(--border);border-radius:6px;padding:10px 12px;overflow:auto}
+  table{width:100%;border-collapse:collapse;margin:12px 0}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left}
+  th{background:#fafafa}
+  .footer{margin-top:40px;font-size:14px;color:var(--muted)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:860px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>IHK-Leitfaden – Teil 3: OOP, Tests &amp; Patterns (FIAE, AP2) – Druckfreundlich</h1>
+  <p class="muted">Nur Deutsch · Java-ähnlicher Pseudocode · ohne dunkle Hintergründe</p>
+
+  <div class="card tip">
+    <strong>Prüfungstipp:</strong> In Teil 3 prüft die IHK oft: saubere Klassen (Attribute, Konstruktoren, Methoden), einfache Tests (Unit, Black/White-Box) und Grund-Patterns (MVC, Singleton, Observer).
+  </div>
+
+  <h2>1. Objektorientierung (OOP)</h2>
+  <div class="card">
+    <h3>Klasse + Konstruktor + Getter</h3>
+    <pre><code>class Jahresstatistik {
+    private int minVerbrauch;
+    private int maxVerbrauch;
+
+    Jahresstatistik(int min, int max) {
+        this.minVerbrauch = min;
+        this.maxVerbrauch = max;
+    }
+
+    int getMinVerbrauch() { return minVerbrauch; }
+    int getMaxVerbrauch() { return maxVerbrauch; }
+}</code></pre>
+  </div>
+
+  <div class="card">
+    <h3>Funktion mit Objektrückgabe</h3>
+    <pre><code>Jahresstatistik ermittleJahresstatistik(int[][] verbrauch) {
+    int min = Integer.MAX_VALUE;
+    int max = Integer.MIN_VALUE;
+    for (int m = 0; m < verbrauch.length; m++) {
+        int sum = 0;
+        for (int t = 0; t < verbrauch[m].length; t++) sum += verbrauch[m][t];
+        if (sum < min) min = sum;
+        if (sum > max) max = sum;
+    }
+    return new Jahresstatistik(min, max);
+}</code></pre>
+  </div>
+
+  <div class="card tip"><strong>Tipp:</strong> Objektrückgabe = mehrere Werte bündeln. Kapselung (private Felder, Getter) kurz erwähnen.</div>
+
+  <h2>2. Tests (IHK-typisch)</h2>
+  <div class="cols">
+    <div class="card">
+      <h3>Black-Box vs. White-Box</h3>
+      <ul>
+        <li><strong>Black-Box:</strong> Test nach Spezifikation (Eingabe/Erwartung). Code ist egal.</li>
+        <li><strong>White-Box:</strong> Test nach Code-Struktur (Zweige, Bedingungen, Pfade).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Unit-Test (Beispiel)</h3>
+      <pre><code>// Testfall: min/max korrekt?
+int[][] v = { {10,20,30}, {15,15,15}, {40,20,10} };
+Jahresstatistik js = ermittleJahresstatistik(v);
+assert(js.getMinVerbrauch() == 45);
+assert(js.getMaxVerbrauch() == 70);</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Regressionstest</h3>
+    <p>Stellt sicher, dass neue Änderungen keine bereits funktionierende Funktionalität kaputt machen. Immer nach Refactorings oder Releases laufen lassen.</p>
+  </div>
+
+  <div class="card tip"><strong>Tipp:</strong> Nenne bei Tests immer: <em>Zweck</em>, <em>Testdaten</em>, <em>Erwartung</em>. Für White-Box: Branch-Abdeckung erwähnen.</div>
+
+  <h2>3. Design Patterns (Kernwissen)</h2>
+  <div class="card">
+    <h3>MVC – Model View Controller</h3>
+    <ul>
+      <li><strong>Model:</strong> Daten & Logik (z. B. Jahresstatistik)</li>
+      <li><strong>View:</strong> Darstellung (UI/Output)</li>
+      <li><strong>Controller:</strong> verbindet Eingaben mit Model-Operationen</li>
+    </ul>
+    <pre><code>// Mini-Skizze (Pseudocode)
+class Model { /* Daten & Logik */ }
+class View  { void show(Model m) { /* Ausgabe */ } }
+class Controller {
+    Model m; View v;
+    void handleInput(...) { /* m verändern, v.show(m) */ }
+}</code></pre>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h3>Singleton</h3>
+      <p>Genau eine Instanz im System (z. B. Config, Logger).</p>
+      <pre><code>class Logger {
+    private static Logger instance;
+    private Logger() {}
+    static Logger getInstance() {
+        if (instance == null) instance = new Logger();
+        return instance;
+    }
+}</code></pre>
+      <p><em>Vorteil:</em> zentrale Instanz. <em>Nachteil:</em> kann Tests erschweren.</p>
+    </div>
+
+    <div class="card">
+      <h3>Observer</h3>
+      <p>Mehrere <em>Observers</em> reagieren auf Änderungen eines <em>Subjects</em> (Publish/Subscribe).</p>
+      <pre><code>interface Observer { void update(int value); }
+class Subject {
+    List&lt;Observer&gt; obs = new ArrayList&lt;&gt;();
+    void attach(Observer o){ obs.add(o); }
+    void setValue(int v){ /* ... */ notifyAll(v); }
+    void notifyAll(int v){ for (Observer o: obs) o.update(v); }
+}</code></pre>
+      <p><em>Nutzung:</em> UI aktualisieren, wenn sich Daten ändern.</p>
+    </div>
+  </div>
+
+  <div class="card tip"><strong>Tipp:</strong> In Antworten kurz Zweck, Aufbau und typisches Einsatzszenario nennen. 1–2 Vor-/Nachteile reichen.</div>
+
+  <h2>4. Debugging – typische Schritte</h2>
+  <ul>
+    <li>Fehler reproduzieren (Eingaben, Umgebung notieren).</li>
+    <li>Log-Ausgaben oder Breakpoints setzen.</li>
+    <li>Hypothese → Stelle im Code eingrenzen → prüfen.</li>
+    <li>Fix implementieren → <strong>Regressionstest</strong> laufen lassen.</li>
+    <li>Ursache dokumentieren (Lessons Learned).</li>
+  </ul>
+  <div class="card">
+    <h3>Mini-Beispiel</h3>
+    <pre><code>// Bug: Prüfziffer falsch berechnet (Rückgabe war sum % 10)
+int p = (10 - (sum % 10)) % 10; // fix: Differenz zum nächsten Zehner</code></pre>
+  </div>
+
+  <h2>5. Spickzettel</h2>
+  <table>
+    <thead><tr><th>Thema</th><th>Kernpunkte</th></tr></thead>
+    <tbody>
+      <tr><td>OOP</td><td>Klasse, Attribute, Konstruktor, Methoden, Getter/Setter, Kapselung</td></tr>
+      <tr><td>Objektrückgabe</td><td><code>return new Klasse(w1, w2);</code> – mehrere Werte bündeln</td></tr>
+      <tr><td>Unit-Test</td><td>kleinste Funktion testen; assert(Erwartung)</td></tr>
+      <tr><td>Black-Box</td><td>gegen Spezifikation (Input/Output), Code egal</td></tr>
+      <tr><td>White-Box</td><td>Zweig-/Pfadabdeckung; Tests aus Code abgeleitet</td></tr>
+      <tr><td>Regression</td><td>stellt sicher: Alte Funktionen bleiben intakt</td></tr>
+      <tr><td>MVC</td><td>Trenne Daten (Model), Darstellung (View), Steuerung (Controller)</td></tr>
+      <tr><td>Singleton</td><td>eine Instanz; Zugriff über <code>getInstance()</code></td></tr>
+      <tr><td>Observer</td><td>Subject benachrichtigt Beobachter bei Änderung</td></tr>
+      <tr><td>Debugging</td><td>Reproduzieren → Eingrenzen → Fix → Regressionstest</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. Checkliste – Was du für Teil 2 können musst</h2>
+  <ul>
+    <li>Pseudocode sicher schreiben (Java-ähnlich, klar strukturiert)</li>
+    <li>Zählen, Summieren, Durchschnitt (Array)</li>
+    <li>Min/Max (1D) und 2D-Array (verschachtelte Schleifen)</li>
+    <li>Objektrückgabe (z. B. Jahresstatistik)</li>
+    <li>Sortieren: BubbleSort, InsertionSort (O(n²))</li>
+    <li>Suchen: Linear (O(n)), Binär (O(log n), nur sortiert)</li>
+    <li>Testarten: Black-Box, White-Box, Unit, Regression</li>
+    <li>Patterns: MVC, Singleton, Observer (Zweck & Skizze)</li>
+    <li>Debugging-Grundschritte; kleine Fixes im Code</li>
+  </ul>
+
+  <p class="footer">© Lernhilfe – „Teil 3: OOP, Tests & Patterns“ – Druckfreundliche Version. Zum PDF-Export: Browser → Drucken → Als PDF speichern.</p>
+</main>
+</body>
+</html>

@@ -48,6 +48,39 @@
       body {
         font-family: 'Inter', sans-serif;
       }
+      
+      /* Mobile PDF viewer fixes */
+      @media (max-width: 768px) {
+        /* Make PDF viewer fullscreen on mobile */
+        .pdf-viewer-container {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 9999 !important;
+        }
+        
+        /* Ensure PDF canvas is visible and properly sized */
+        canvas {
+          max-width: 100% !important;
+          height: auto !important;
+          touch-action: pinch-zoom !important;
+        }
+        
+        /* Make fullscreen button more visible on mobile */
+        button[title*="Fullscreen"] {
+          min-width: 44px !important;
+          min-height: 44px !important;
+        }
+        
+        /* Improve PDF text rendering */
+        .textLayer {
+          opacity: 1 !important;
+          mix-blend-mode: normal !important;
+        }
+      }
+    }
       .font-farsi {
         font-family: 'Vazirmatn', sans-serif;
       }

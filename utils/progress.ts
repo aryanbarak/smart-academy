@@ -24,12 +24,15 @@ const PROGRESS_KEY = 'fiae_lesson_progress';
 const SECTION_PROGRESS_KEY = 'fiae_section_progress';
 const STATS_KEY = 'fiae_study_stats';
 
+// In-memory caches to avoid repeated JSON parse and localStorage I/O
+let progressCache: Record<string, LessonProgress> | null = null;
+let sectionProgressCache: Record<string, SectionProgress> | null = null;
+let statsCache: StudyStats | null = null;
+
 // Lesson Progress
 export function getLessonProgress(lessonId: string): LessonProgress | null {
   try {
-    const data = localStorage.getItem(PROGRESS_KEY);
-    if (!data) return null;
-    const allProgress: Record<string, LessonProgress> = JSON.parse(data);
+    const allProgress = getAllLessonProgress();
     return allProgress[lessonId] || null;
   } catch {
     return null;
@@ -38,9 +41,10 @@ export function getLessonProgress(lessonId: string): LessonProgress | null {
 
 export function getAllLessonProgress(): Record<string, LessonProgress> {
   try {
+    if (progressCache) return progressCache;
     const data = localStorage.getItem(PROGRESS_KEY);
-    if (!data) return {};
-    return JSON.parse(data);
+    progressCache = data ? JSON.parse(data) : {};
+    return progressCache;
   } catch {
     return {};
   }
@@ -57,6 +61,7 @@ export function markLessonComplete(lessonId: string): void {
       lastAccessed: Date.now()
     };
     
+    progressCache = allProgress;
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(allProgress));
     
     // Update stats
@@ -78,6 +83,7 @@ export function toggleLessonComplete(lessonId: string): boolean {
       lastAccessed: Date.now()
     };
     
+    progressCache = allProgress;
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(allProgress));
     updateStudyStats();
     
@@ -98,6 +104,7 @@ export function updateLessonAccess(lessonId: string): void {
       lastAccessed: Date.now()
     };
     
+    progressCache = allProgress;
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(allProgress));
   } catch (e) {
     console.error('Failed to update lesson access:', e);
@@ -115,12 +122,14 @@ export function addStudyTime(lessonId: string, seconds: number): void {
       lastAccessed: Date.now()
     };
     
+    progressCache = allProgress;
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(allProgress));
     
     // Update total study time in stats
     const stats = getStudyStats();
     stats.totalTimeSpent += seconds;
     stats.lastStudyDate = Date.now();
+    statsCache = stats;
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
   } catch (e) {
     console.error('Failed to add study time:', e);
@@ -130,19 +139,27 @@ export function addStudyTime(lessonId: string, seconds: number): void {
 // Section Progress (for individual sections within a lesson)
 export function getSectionProgress(sectionId: string): SectionProgress | null {
   try {
-    const data = localStorage.getItem(SECTION_PROGRESS_KEY);
-    if (!data) return null;
-    const allProgress: Record<string, SectionProgress> = JSON.parse(data);
+    const allProgress = getAllSectionProgress();
     return allProgress[sectionId] || null;
   } catch {
     return null;
   }
 }
 
+function getAllSectionProgress(): Record<string, SectionProgress> {
+  try {
+    if (sectionProgressCache) return sectionProgressCache;
+    const data = localStorage.getItem(SECTION_PROGRESS_KEY);
+    sectionProgressCache = data ? JSON.parse(data) : {};
+    return sectionProgressCache;
+  } catch {
+    return {};
+  }
+}
+
 export function markSectionComplete(sectionId: string): void {
   try {
-    const data = localStorage.getItem(SECTION_PROGRESS_KEY);
-    const allProgress: Record<string, SectionProgress> = data ? JSON.parse(data) : {};
+    const allProgress = getAllSectionProgress();
     
     allProgress[sectionId] = {
       sectionId,
@@ -150,6 +167,7 @@ export function markSectionComplete(sectionId: string): void {
       timestamp: Date.now()
     };
     
+    sectionProgressCache = allProgress;
     localStorage.setItem(SECTION_PROGRESS_KEY, JSON.stringify(allProgress));
   } catch (e) {
     console.error('Failed to mark section complete:', e);
@@ -159,6 +177,7 @@ export function markSectionComplete(sectionId: string): void {
 // Study Statistics
 export function getStudyStats(): StudyStats {
   try {
+    if (statsCache) return statsCache;
     const data = localStorage.getItem(STATS_KEY);
     if (!data) {
       return {
@@ -168,7 +187,8 @@ export function getStudyStats(): StudyStats {
         studyStreak: 0
       };
     }
-    return JSON.parse(data);
+    statsCache = JSON.parse(data);
+    return statsCache;
   } catch {
     return {
       totalTimeSpent: 0,
@@ -207,6 +227,7 @@ function updateStudyStats(): void {
     stats.lessonsCompleted = completedCount;
     stats.lastStudyDate = now;
     
+    statsCache = stats;
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
   } catch (e) {
     console.error('Failed to update study stats:', e);

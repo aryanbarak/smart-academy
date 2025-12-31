@@ -1,0 +1,10 @@
+{
+	"appId": "com.fiae.lernplattform",
+	"appName": "FIAE Lernplattform",
+	"webDir": "dist",
+	"bundledWebRuntime": false,
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {}
+}

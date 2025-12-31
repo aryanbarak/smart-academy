@@ -53,14 +53,14 @@ export function searchLessons(query: string, lessons: Lesson[], language: 'de' |
     }
     
     // Search in sections
-    lesson.sections.forEach((section, index) => {
+    lesson.sections.forEach((section, sectionIdx) => {
       // Search heading
       if (language === 'de' || language === 'both') {
         if (section.headingDe.toLowerCase().includes(normalizedQuery)) {
           results.push({
             lessonId: lesson.id,
             lessonTitle: lesson.title,
-            sectionIndex: index,
+            sectionIndex: sectionIdx,
             sectionHeading: section.headingDe,
             matchText: section.headingDe,
             matchType: 'heading',
@@ -75,7 +75,7 @@ export function searchLessons(query: string, lessons: Lesson[], language: 'de' |
           results.push({
             lessonId: lesson.id,
             lessonTitle: lesson.title,
-            sectionIndex: index,
+            sectionIndex: sectionIdx,
             sectionHeading: section.headingFa,
             matchText: section.headingFa,
             matchType: 'heading',
@@ -88,42 +88,42 @@ export function searchLessons(query: string, lessons: Lesson[], language: 'de' |
       // Search content
       if (language === 'de' || language === 'both') {
         const contentLower = section.contentDe.toLowerCase();
-        const index = contentLower.indexOf(normalizedQuery);
-        if (index >= 0) {
-          const start = Math.max(0, index - 50);
-          const end = Math.min(section.contentDe.length, index + normalizedQuery.length + 50);
+        const matchIdx = contentLower.indexOf(normalizedQuery);
+        if (matchIdx >= 0) {
+          const start = Math.max(0, matchIdx - 50);
+          const end = Math.min(section.contentDe.length, matchIdx + normalizedQuery.length + 50);
           const context = section.contentDe.substring(start, end);
           
           results.push({
             lessonId: lesson.id,
             lessonTitle: lesson.title,
-            sectionIndex: index,
+            sectionIndex: sectionIdx,
             sectionHeading: section.headingDe,
             matchText: context,
             matchType: 'content',
-            highlightStart: index - start,
-            highlightEnd: index - start + normalizedQuery.length
+            highlightStart: matchIdx - start,
+            highlightEnd: matchIdx - start + normalizedQuery.length
           });
         }
       }
       
       if ((language === 'fa' || language === 'both') && section.contentFa) {
         const contentLower = section.contentFa.toLowerCase();
-        const index = contentLower.indexOf(normalizedQuery);
-        if (index >= 0) {
-          const start = Math.max(0, index - 50);
-          const end = Math.min(section.contentFa.length, index + normalizedQuery.length + 50);
+        const matchIdx = contentLower.indexOf(normalizedQuery);
+        if (matchIdx >= 0) {
+          const start = Math.max(0, matchIdx - 50);
+          const end = Math.min(section.contentFa.length, matchIdx + normalizedQuery.length + 50);
           const context = section.contentFa.substring(start, end);
           
           results.push({
             lessonId: lesson.id,
             lessonTitle: lesson.title,
-            sectionIndex: index,
+            sectionIndex: sectionIdx,
             sectionHeading: section.headingFa || section.headingDe,
             matchText: context,
             matchType: 'content',
-            highlightStart: index - start,
-            highlightEnd: index - start + normalizedQuery.length
+            highlightStart: matchIdx - start,
+            highlightEnd: matchIdx - start + normalizedQuery.length
           });
         }
       }
