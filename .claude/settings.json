@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Projects\\\\fiae-lernplattform\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "Bash(Out-String)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Projects\\\\fiae-lernplattform\" -Recurse -Force | Where-Object { !$_.PSIsContainer } | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "PowerShell($items = Get-ChildItem -Path \"c:\\\\Projects\\\\fiae-lernplattform\" -Recurse -Force -Exclude \".git\" | Where-Object { !$_.PSIsContainer }; $items | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"c:\\\\Projects\\\\fiae-lernplattform\\\\\", \"\"\\) } | Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Projects\\\\fiae-lernplattform\" -Directory -Force | Where-Object { $_.Name -ne \".git\" } | Select-Object -ExpandProperty Name)",
+      "Bash(npx tsc *)",
+      "PowerShell(Set-Location \"c:\\\\Projects\\\\fiae-lernplattform\"; $result = npx tsc --noEmit 2>&1; $result | Where-Object { $_ -match \"MasterFile\" } | Select-Object -First 20; Write-Host \"--- EXIT: $LASTEXITCODE\")",
+      "PowerShell(Set-Location \"c:\\\\Projects\\\\fiae-lernplattform\"; npx tsc --noEmit 2>&1 | Out-String | Select-String -Pattern \"MasterFile\" -AllMatches | ForEach-Object { $_.Line })",
+      "PowerShell(Set-Location \"c:\\\\Projects\\\\fiae-lernplattform\"; $out = npx tsc --noEmit 2>&1 | Out-String; $out -split \"`n\" | Where-Object { $_ -match \"MasterFile|SpeechRecognition\" })",
+      "PowerShell(Set-Location \"c:\\\\Projects\\\\fiae-lernplattform\"; npx tsc --noEmit > tsc_out.txt 2>&1; Get-Content tsc_out.txt | Where-Object { $_ -match \"MasterFile\" })",
+      "PowerShell(Get-Command adb -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command java -ErrorAction SilentlyContinue)",
+      "PowerShell($env:ANDROID_HOME)",
+      "PowerShell($env:ANDROID_SDK_ROOT)",
+      "PowerShell($paths = @\\(\"$env:LOCALAPPDATA\\\\Android\\\\Sdk\", \"C:\\\\Android\\\\Sdk\", \"C:\\\\Users\\\\$env:USERNAME\\\\AppData\\\\Local\\\\Android\\\\Sdk\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { Write-Host \"Found: $p\"; Get-ChildItem $p -Name | Select-Object -First 5 } })",
+      "PowerShell($sdk = \"C:\\\\Users\\\\aryan\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; Get-ChildItem \"$sdk\\\\build-tools\" -Name | Select-Object -Last 3; Get-ChildItem \"$sdk\\\\platforms\" -Name -ErrorAction SilentlyContinue | Select-Object -Last 5; Get-ChildItem \"$sdk\\\\emulator\" -Name \"emulator.exe\" -ErrorAction SilentlyContinue | Select-Object -First 1)",
+      "PowerShell($sdk = \"C:\\\\Users\\\\aryan\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; & \"$sdk\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)"
+    ]
+  }
+}

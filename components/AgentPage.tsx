@@ -1,5 +1,38 @@
 ﻿// src/components/AgentPage.tsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AlgorithmComparisonTable, {
+  AlgorithmId,
+} from "@/components/AlgorithmComparisonTable";
+
+const uiTexts = {
+  de: {
+    coachTitle: "FIAE / Algorithmus-Hilfe",
+    languageLabel: "Antwortsprache:",
+    startButton: "Analyse starten",
+    loadingButton: "Analysiere...",
+    loadingHint: "Analyse laeuft...",
+    answerLabel: "Antwort des Lerncoachs",
+    noAnswer: "Noch keine Antwort erhalten.",
+    connectionOk: "Verbindung zum Lerncoach hergestellt",
+    tabCoach: "FIAE Coach",
+    tabPlanning: "Tagesplanung",
+    agentBack: "Startseite",
+  },
+  fa: {
+    coachTitle: "FIAE / کمک برای الگوریتم‌ها",
+    languageLabel: "زبان پاسخ:",
+    startButton: "شروع تحلیل",
+    loadingButton: "در حال تحلیل...",
+    loadingHint: "تحلیل در حال انجام است...",
+    answerLabel: "پاسخ مربی:",
+    noAnswer: "هنوز پاسخی دریافت نشده است.",
+    connectionOk: "ارتباط با مربی برقرار شد",
+    tabCoach: "مربی FIAE",
+    tabPlanning: "برنامه‌ریزی روزانه",
+    agentBack: "صفحه اصلی",
+  },
+};
 
 type PlannerTask = {
   name: string;
@@ -26,11 +59,15 @@ type PlannerResult = {
 const API_BASE = "http://127.0.0.1:8000";
 
 const AgentPage: React.FC = () => {
-  const [fiaeInput, setFiaeInput] = useState("");
-  const [fiaeResponse, setFiaeResponse] = useState("");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [message, setMessage] = useState("");
+  const [answer, setAnswer] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [answerLang, setAnswerLang] = useState<"de" | "fa">("de");
+  const [language, setLanguage] = useState<"de" | "fa">("de");
+  const [currentAlgorithmId, setCurrentAlgorithmId] = useState<
+    AlgorithmId | undefined
+  >(undefined);
   const [activeTool, setActiveTool] = useState<"fiae" | "planner">("fiae");
   const [plannerInput, setPlannerInput] = useState("");
   const [plannerResponse, setPlannerResponse] = useState<string | null>(null);
@@ -38,30 +75,67 @@ const AgentPage: React.FC = () => {
   const [plannerError, setPlannerError] = useState<string | null>(null);
   const [plannerResult, setPlannerResult] = useState<PlannerResult | null>(null);
 
+  const detectAlgorithmId = (input: string): AlgorithmId | undefined => {
+    const m = input.toLowerCase();
+    if (m.includes("selection sort") || m.includes("selection") || m.includes("انتخابی")) {
+      return "selection-sort";
+    }
+    if (m.includes("linear search") || m.includes("lineare suche") || m.includes("جستجوی خطی")) {
+      return "linear-search";
+    }
+    if (m.includes("binary search") || m.includes("binäre suche") || m.includes("dudui") || m.includes("دودویی")) {
+      return "binary-search";
+    }
+    if (m.includes("bubble sort") || m.includes("حبابی")) {
+      return "bubble-sort";
+    }
+    if (m.includes("insertion sort") || m.includes("درج")) {
+      return "insertion-sort";
+    }
+    if (m.includes("merge sort") || m.includes("merge")) {
+      return "merge-sort";
+    }
+    if (m.includes("quick sort") || m.includes("quick")) {
+      return "quick-sort";
+    }
+    return undefined;
+  };
+
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fiaeInput.trim()) return;
-    setLoading(true);
+    if (!message.trim()) return;
+    setIsLoading(true);
     setError(null);
-    setFiaeResponse("");
+    setAnswer("");
 
     try {
-      const res = await fetch(`${API_BASE}/api/fiae/analyze`, {
+      const response = await fetch("http://127.0.0.1:8000/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ problem: fiaeInput, lang: answerLang }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message,
+          language,
+        }),
       });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+      if (!response.ok) {
+        setError(`HTTP ${response.status}`);
+        return;
       }
 
-      const data = await res.json();
-      setFiaeResponse(data.answer || "Keine Antwort bekommen.");
-    } catch (err: any) {
-      setError(err.message || "Unbekannter Fehler.");
+      const data = await response.json();
+      if (data && typeof data.answer === "string") {
+        setAnswer(data.answer);
+        setCurrentAlgorithmId(detectAlgorithmId(message));
+      } else {
+        setError("Ungueltige Antwort vom Backend");
+      }
+    } catch (err) {
+      console.error("[AgentPage] analyze error", err);
+      setError("Backend nicht erreichbar (http://127.0.0.1:8000/analyze).");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -155,10 +229,23 @@ const AgentPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-900 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        {/* عنوان صفحه */}
-        <h1 className="text-2xl md:text-3xl font-bold text-center mb-6 text-slate-100">
-          AI Agent – FIAE Lerncoach
-        </h1>
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-6">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            {uiTexts[language].agentBack}
+          </button>
+          <h1 className="text-2xl md:text-3xl font-bold text-center text-slate-100">
+            AI Agent – FIAE Lerncoach
+          </h1>
+          <div className="w-24" />
+        </div>
 
         {/* کارت اصلی */}
         <div className="bg-slate-100 rounded-xl shadow-lg p-5 md:p-6 space-y-4 text-slate-900">
@@ -172,7 +259,7 @@ const AgentPage: React.FC = () => {
                   : "bg-white text-slate-800 border-slate-300"
               }`}
             >
-              FIAE Coach
+              {uiTexts[language].tabCoach}
             </button>
             <button
               type="button"
@@ -183,24 +270,26 @@ const AgentPage: React.FC = () => {
                   : "bg-white text-slate-800 border-slate-300"
               }`}
             >
-              Tagesplanung
+              {uiTexts[language].tabPlanning}
             </button>
           </div>
 
           {activeTool === "fiae" && (
             <>
               <h2 className="text-lg font-semibold border-b border-slate-300 pb-2">
-                FIAE / Algorithmus-Hilfe
+                {uiTexts[language].coachTitle}
               </h2>
 
               <form onSubmit={handleAnalyze} className="space-y-3">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-600">Antwortsprache:</span>
+                  <span className="text-slate-600">
+                    {uiTexts[language].languageLabel}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => setAnswerLang("de")}
+                    onClick={() => setLanguage("de")}
                     className={`px-2 py-1 rounded-md border text-xs ${
-                      answerLang === "de"
+                      language === "de"
                         ? "bg-indigo-600 text-white border-indigo-600"
                         : "bg-white text-slate-800 border-slate-300"
                     }`}
@@ -209,9 +298,9 @@ const AgentPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setAnswerLang("fa")}
+                    onClick={() => setLanguage("fa")}
                     className={`px-2 py-1 rounded-md border text-xs ${
-                      answerLang === "fa"
+                      language === "fa"
                         ? "bg-indigo-600 text-white border-indigo-600"
                         : "bg-white text-slate-800 border-slate-300"
                     }`}
@@ -222,39 +311,60 @@ const AgentPage: React.FC = () => {
                 <textarea
                   className="w-full p-3 border border-slate-300 rounded-md min-h-[110px] text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Beschreibe dein Algorithmus-Problem (z.B. 'Erkläre Schritt-für-Schritt BubbleSort', 'Maximum in einer Liste finden' ...)"
-                  value={fiaeInput}
-                  onChange={(e) => setFiaeInput(e.target.value)}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                 />
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={isLoading}
                   className="inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Analysiere..." : "Analyse starten"}
+                  {isLoading
+                    ? uiTexts[language].loadingButton
+                    : uiTexts[language].startButton}
                 </button>
+                {isLoading && (
+                  <span className="text-xs text-slate-600">
+                    {uiTexts[language].loadingHint}
+                  </span>
+                )}
               </form>
 
-              {error && (
-                <p className="text-sm text-red-600 mt-2">Fehler: {error}</p>
-              )}
-
-              {fiaeResponse && (
+              {answer || error ? (
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold mb-1">
-                    Antwort des Lerncoachs:
+                    {uiTexts[language].answerLabel}
                   </h3>
                   <pre
                     className="bg-white text-slate-900 p-3 rounded-md text-sm whitespace-pre-wrap border border-slate-200"
-                    dir={/[\u0600-\u06FF]/.test(fiaeResponse) ? "rtl" : "ltr"}
+                    dir={/[\u0600-\u06FF]/.test(answer || "") ? "rtl" : "ltr"}
                     style={{
-                      textAlign: /[\u0600-\u06FF]/.test(fiaeResponse)
+                      textAlign: /[\u0600-\u06FF]/.test(answer || "")
                         ? "right"
                         : "left",
                     }}
                   >
-                    {fiaeResponse}
+                    {answer || `Fehler: ${error}`}
                   </pre>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold mb-1">
+                    {uiTexts[language].answerLabel}
+                  </h3>
+                  <pre className="bg-white text-slate-900 p-3 rounded-md text-sm whitespace-pre-wrap border border-slate-200">
+                    {uiTexts[language].noAnswer}
+                  </pre>
+                </div>
+              )}
+
+              {answer && (
+                <div className="mt-4">
+                  <AlgorithmComparisonTable
+                    currentAlgorithmId={currentAlgorithmId}
+                    language={language}
+                  />
                 </div>
               )}
             </>

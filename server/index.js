@@ -102,6 +102,103 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
+// Generate a new IHK-style question from lesson content
+app.post('/api/generate-question', async (req, res) => {
+  const { lessonContent = '', category = 'GA2', difficulty = 'medium' } = req.body || {};
+  if (!aiClient) {
+    return res.json({
+      question: 'Was ist die Zeitkomplexität von BubbleSort im Durchschnitt?',
+      questionFa: 'پیچیدگی زمانی BubbleSort به طور میانگین چیست؟',
+      options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(2ⁿ)'],
+      optionsFa: ['O(n)', 'O(n log n)', 'O(n²)', 'O(2ⁿ)'],
+      correctAnswer: 2,
+      explanation: 'BubbleSort hat im Durchschnitt O(n²) wegen der zwei verschachtelten Schleifen.',
+      explanationFa: 'BubbleSort به طور میانگین O(n²) است به دلیل دو حلقه تو در تو.',
+    });
+  }
+  try {
+    const prompt = `Du bist ein IHK-Prüfungsexperte für Fachinformatiker Anwendungsentwicklung.
+
+Erstelle GENAU eine Multiple-Choice-Frage auf Basis dieses Lernmaterials:
+"""
+${lessonContent.slice(0, 1500)}
+"""
+
+Schwierigkeitsgrad: ${difficulty} (easy/medium/hard)
+Kategorie: ${category}
+
+Antworte NUR mit diesem JSON (kein Markdown, keine Erklärung darum):
+{
+  "question": "Deutsche Frage",
+  "questionFa": "Farsi Übersetzung",
+  "options": ["A", "B", "C", "D"],
+  "optionsFa": ["A فارسی", "B فارسی", "C فارسی", "D فارسی"],
+  "correctAnswer": 0,
+  "explanation": "Deutsche Erklärung",
+  "explanationFa": "توضیح فارسی"
+}`;
+
+    const response = await aiClient.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+    const raw = response?.text || response?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    // Strip markdown code fences if present
+    const cleaned = raw.replaceAll(/```json?\s*/gi, '').replaceAll('```', '').trim();
+    const parsed = JSON.parse(cleaned);
+    res.json(parsed);
+  } catch (err) {
+    console.error('generate-question error', err);
+    res.status(500).json({ error: 'Frage konnte nicht generiert werden' });
+  }
+});
+
+// Analyse weak spots based on quiz history
+app.post('/api/weak-spots', async (req, res) => {
+  const { quizHistory = [], errorBank = [] } = req.body || {};
+  if (!aiClient) {
+    return res.json({
+      summary: 'Keine API-Verbindung — Analyse nicht verfügbar.',
+      summaryFa: 'اتصال API وجود ندارد — تحلیل در دسترس نیست.',
+      weakAreas: [],
+      recommendation: 'Bitte API_KEY setzen für personalisierte Analyse.',
+      recommendationFa: 'برای تحلیل شخصی‌سازی شده API_KEY را تنظیم کنید.',
+    });
+  }
+  try {
+    const historyStr = JSON.stringify(quizHistory.slice(0, 10));
+    const errorStr = JSON.stringify(errorBank.slice(0, 15));
+    const prompt = `Du bist ein Lernassistent für FIAE-Azubis.
+
+Quiz-Verlauf (letzte 10 Sessionen):
+${historyStr}
+
+Fehlerbank (falsch beantwortete Fragen):
+${errorStr}
+
+Analysiere die Schwächen und antworte NUR mit diesem JSON:
+{
+  "summary": "Kurze Zusammenfassung auf Deutsch",
+  "summaryFa": "خلاصه به فارسی",
+  "weakAreas": ["Thema1", "Thema2", "Thema3"],
+  "recommendation": "Konkrete Lernempfehlung auf Deutsch",
+  "recommendationFa": "توصیه یادگیری به فارسی"
+}`;
+
+    const response = await aiClient.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+    const raw = response?.text || response?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const cleaned = raw.replaceAll(/```json?\s*/gi, '').replaceAll('```', '').trim();
+    const parsed = JSON.parse(cleaned);
+    res.json(parsed);
+  } catch (err) {
+    console.error('weak-spots error', err);
+    res.status(500).json({ error: 'Analyse fehlgeschlagen' });
+  }
+});
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 app.listen(port, () => {

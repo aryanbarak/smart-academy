@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createQuizSession, submitAnswer, completeQuizSession, QuizSession, QUIZ_QUESTIONS } from '../utils/quiz';
+import { addToErrorBank } from '../utils/errorBank';
 import { CourseType } from '../types';
 
 interface QuizModalProps {
@@ -27,9 +28,24 @@ const QuizModal: React.FC<QuizModalProps> = ({ category, onClose }) => {
   
   const handleAnswer = () => {
     if (session && selectedAnswer !== null) {
-      const updatedSession = submitAnswer(session, session.questions[currentQuestionIndex].id, selectedAnswer);
+      const q = session.questions[currentQuestionIndex];
+      const isCorrect = selectedAnswer === q.correctAnswer;
+      const updatedSession = submitAnswer(session, q.id, selectedAnswer);
       setSession(updatedSession);
       setShowResult(true);
+      if (!isCorrect) {
+        addToErrorBank({
+          questionId: q.id,
+          question: q.question,
+          questionFa: q.questionFa,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          userAnswer: selectedAnswer,
+          explanation: q.explanation,
+          explanationFa: q.explanationFa,
+          category: q.category,
+        });
+      }
     }
   };
   
@@ -112,6 +128,13 @@ const QuizModal: React.FC<QuizModalProps> = ({ category, onClose }) => {
             Du hast {session.score} von {session.questions.length} Fragen richtig beantwortet.
           </p>
           
+          {session.questions.length - session.score > 0 && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
+              <p className="text-xs text-red-700 dark:text-red-300 font-farsi text-right" dir="rtl">
+                ❌ {session.questions.length - session.score} سوال اشتباه به بانک اشتباهات اضافه شد
+              </p>
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={() => startQuiz(session.questions.length)}

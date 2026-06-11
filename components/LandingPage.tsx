@@ -1,6 +1,7 @@
 // src/components/LandingPage.tsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage, LangToggle } from "../src/contexts/LanguageContext";
 
 interface LandingPageProps {
   onStart: () => void;
@@ -8,384 +9,414 @@ interface LandingPageProps {
   onToggleDarkMode: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({
-  onStart,
-  darkMode,
-  onToggleDarkMode,
-}) => {
-  // کدام "صفحه" در لندینگ نمایش داده شود: home | features | languages
-  const [section, setSection] = useState<"home" | "features" | "languages">(
-    "home"
-  );
+// ─── Onboarding wizard ────────────────────────────────────────────────────────
+type CourseGoal = "GA2" | "WISO" | "BOTH";
+type TimeAvail = "15" | "30" | "60";
+type StudyLevel = "beginner" | "mid" | "ready";
 
-  // وضعیت منوی موبایل
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+interface OnboardingState {
+  goal: CourseGoal | null;
+  time: TimeAvail | null;
+  level: StudyLevel | null;
+}
 
-  // اسکرول نرم به سکشن‌های همین صفحه (برای Features در home)
-  const scrollToId = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+const OnboardingWizard: React.FC<{
+  onDone: (goal: CourseGoal) => void;
+  onSkip: () => void;
+}> = ({ onDone, onSkip }) => {
+  const [step, setStep] = useState(0);
+  const [state, setState] = useState<OnboardingState>({ goal: null, time: null, level: null });
+
+  const steps = [
+    {
+      question: "Worauf bereitest du dich vor?",
+      questionFa: "برای کدام امتحان آماده می‌شوی؟",
+      options: [
+        { val: "GA2", label: "GA2 — Algorithmen", icon: "⚙️", desc: "BubbleSort, Search, Pseudocode" },
+        { val: "WISO", label: "WISO — Wirtschaft & Recht", icon: "⚖️", desc: "Arbeitsrecht, Sozialversicherung" },
+        { val: "BOTH", label: "Beides", icon: "🎯", desc: "GA2 + WISO zusammen" },
+      ] as { val: CourseGoal; label: string; icon: string; desc: string }[],
+      key: "goal" as keyof OnboardingState,
+    },
+    {
+      question: "Wie viel Zeit hast du täglich?",
+      questionFa: "روزی چقدر وقت داری؟",
+      options: [
+        { val: "15", label: "15 Minuten", icon: "⚡", desc: "Schnelle Wiederholung — ideal für Flashcards" },
+        { val: "30", label: "30 Minuten", icon: "📚", desc: "1 Lektion + Quiz" },
+        { val: "60", label: "1+ Stunde", icon: "🔥", desc: "Intensive Vorbereitung + Visualizer" },
+      ] as { val: TimeAvail; label: string; icon: string; desc: string }[],
+      key: "time" as keyof OnboardingState,
+    },
+    {
+      question: "Wo stehst du gerade?",
+      questionFa: "الان کجای یادگیری هستی؟",
+      options: [
+        { val: "beginner", label: "Gerade angefangen", icon: "🌱", desc: "Alles neu — starte mit Grundlagen" },
+        { val: "mid", label: "Mittendrin", icon: "📖", desc: "Ich lerne schon — möchte Lücken schließen" },
+        { val: "ready", label: "Kurz vor der Prüfung", icon: "🏁", desc: "Letzte Wiederholung & Prüfungssimulation" },
+      ] as { val: StudyLevel; label: string; icon: string; desc: string }[],
+      key: "level" as keyof OnboardingState,
+    },
+  ];
+
+  const current = steps[step];
+  const currentVal = state[current.key];
+
+  const handleNext = () => {
+    if (!currentVal) return;
+    if (step < steps.length - 1) {
+      setStep(s => s + 1);
+    } else {
+      const goal = state.goal ?? "GA2";
+      const target = goal === "BOTH" ? "GA2" : goal;
+      localStorage.setItem("landingTarget", target);
+      localStorage.setItem("fiae_onboarding_done", "1");
+      localStorage.setItem("fiae_onboarding_time", state.time ?? "30");
+      localStorage.setItem("fiae_onboarding_level", state.level ?? "mid");
+      onDone(goal);
     }
   };
 
-  // رفتن به Dashboard با نوع مشخص
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">
+              Schritt {step + 1} von {steps.length}
+            </span>
+            <button type="button" onClick={onSkip} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+              Überspringen
+            </button>
+          </div>
+          <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full transition-all duration-300"
+              style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+          </div>
+        </div>
+
+        <div className="px-6 pb-2">
+          <h2 className="text-lg font-bold text-slate-50">{current.question}</h2>
+          <p className="text-sm text-slate-400 font-farsi mt-0.5" dir="rtl">{current.questionFa}</p>
+        </div>
+
+        <div className="px-6 pb-6 space-y-2 mt-2">
+          {current.options.map(opt => (
+            <button
+              key={opt.val}
+              type="button"
+              onClick={() => setState(s => ({ ...s, [current.key]: opt.val }))}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                currentVal === opt.val
+                  ? "border-blue-500 bg-blue-500/10"
+                  : "border-slate-700 hover:border-slate-500 bg-slate-800/60"
+              }`}
+            >
+              <span className="text-2xl">{opt.icon}</span>
+              <div>
+                <p className="text-sm font-semibold text-slate-100">{opt.label}</p>
+                <p className="text-xs text-slate-400">{opt.desc}</p>
+              </div>
+              {currentVal === opt.val && (
+                <svg className="w-5 h-5 text-blue-400 ml-auto flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="px-6 pb-6">
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!currentVal}
+            className="w-full py-3 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {step < steps.length - 1 ? "Weiter →" : "Lernplattform starten 🚀"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDarkMode }) => {
+  const { t } = useLanguage();
+  const [section, setSection] = useState<"home" | "features" | "languages">("home");
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => localStorage.getItem("fiae_onboarding_done") === null
+  );
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const goToDashboardWithType = (type: "GA2" | "WISO" | "PRUEF") => {
     localStorage.setItem("landingTarget", type);
     onStart();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-sky-100 text-slate-900 flex flex-col">
-      {/* Top nav */}
-      <header className="w-full border-b border-sky-100 bg-white/80 backdrop-blur">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo + title */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      {showOnboarding && (
+        <OnboardingWizard
+          onDone={goal => {
+            setShowOnboarding(false);
+            if (goal === "BOTH") onStart();
+            else goToDashboardWithType(goal);
+          }}
+          onSkip={() => {
+            localStorage.setItem("fiae_onboarding_done", "1");
+            setShowOnboarding(false);
+          }}
+        />
+      )}
+
+      {/* ── Header (همان سبک dashboard) ── */}
+      <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-sky-500 flex items-center justify-center text-white font-bold shadow-md">
-              FIAE
+            <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+              FL
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold">Fachinformatiker</span>
-              <span className="text-xs text-slate-500">
-                Anwendung Entwicklung Lernplattform
-              </span>
+            <div className="hidden sm:flex flex-col">
+              <span className="text-sm font-semibold text-slate-50 tracking-tight">{t.platformName}</span>
+              <span className="text-[11px] text-slate-400">{t.platformSub}</span>
             </div>
           </div>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-4 text-sm text-slate-600">
-            {/* Home: برگرد به صفحهٔ اصلی همین لندینگ */}
+          <nav className="hidden md:flex items-center gap-1 rounded-full bg-slate-800/80 px-1 py-0.5">
             <button
-              className={`hover:text-sky-600 ${
-                section === "home" ? "text-sky-600 font-semibold" : ""
-              }`}
-              onClick={() => {
-                setSection("home");
-                setMobileMenuOpen(false);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+              type="button"
+              onClick={() => { setSection("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${section === "home" ? "bg-blue-500 text-white shadow-sm" : "text-slate-300 hover:text-white hover:bg-slate-700/80"}`}
             >
-              Home
+              {t.home}
             </button>
-
-            {/* Algorithms → Dashboard / GA2 */}
             <button
-              className="hover:text-sky-600"
+              type="button"
               onClick={() => goToDashboardWithType("GA2")}
+              className="px-3 py-1 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/80 transition-all"
             >
-              Algorithms
+              {t.algorithms}
             </button>
-
-            {/* WISO → Dashboard / WISO */}
             <button
-              className="hover:text-sky-600"
+              type="button"
               onClick={() => goToDashboardWithType("WISO")}
+              className="px-3 py-1 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/80 transition-all"
             >
-              WISO
+              {t.wiso}
             </button>
-
-            {/* Programming Language → صفحهٔ زبان‌ها */}
             <button
-              className={`hover:text-sky-600 ${
-                section === "languages" ? "text-sky-600 font-semibold" : ""
-              }`}
-              onClick={() => {
-                setSection("languages");
-                setMobileMenuOpen(false);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+              type="button"
+              onClick={() => { setSection("languages"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${section === "languages" ? "bg-blue-500 text-white shadow-sm" : "text-slate-300 hover:text-white hover:bg-slate-700/80"}`}
             >
-              Programing Language
+              {t.javaPdf}
             </button>
-
-            {/* Features → صفحهٔ Features */}
             <button
-              className={`hover:text-sky-600 ${
-                section === "features" ? "text-sky-600 font-semibold" : ""
-              }`}
-              onClick={() => {
-                setSection("features");
-                setMobileMenuOpen(false);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+              type="button"
+              onClick={() => { setSection("features"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${section === "features" ? "bg-blue-500 text-white shadow-sm" : "text-slate-300 hover:text-white hover:bg-slate-700/80"}`}
             >
-              Features
+              {t.features}
             </button>
-            <Link to="/agent" className="hover:text-sky-600 font-semibold">
-              AI Agent
+            <Link to="/agent" className="px-3 py-1 rounded-full text-xs font-semibold text-blue-400 hover:text-white hover:bg-blue-600 transition-all">
+              {t.aiAgent}
             </Link>
           </nav>
 
-          {/* Right actions + mobile button */}
+          {/* Right: lang toggle + CTA + darkmode + mobile */}
           <div className="flex items-center gap-2">
+            <LangToggle />
             <button
+              type="button"
               onClick={onToggleDarkMode}
-              className="p-2 rounded-full text-slate-500 hover:bg-slate-100"
-              aria-label="Dark mode"
+              className="p-1.5 rounded-full text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
             >
               {darkMode ? (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                  />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
               )}
             </button>
-
-            {/* دکمه اصلی – در موبایل پشت منوی کشویی هم تکرار می‌شود */}
             <button
+              type="button"
               onClick={() => goToDashboardWithType("GA2")}
-              className="hidden sm:inline-flex px-4 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-white hover:bg-sky-600 shadow-sm"
+              className="hidden sm:inline-flex px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm"
             >
-              Pseudocode für IHK Prüfung
+              {t.toPlatform}
             </button>
-
-            {/* دکمه منوی موبایل */}
             <button
-              className="md:hidden p-2 rounded-full text-slate-600 hover:bg-slate-100"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label="Menu"
+              type="button"
+              aria-label={t.menuOpen}
+              className="md:hidden p-1.5 rounded-full text-slate-400 hover:bg-slate-800"
+              onClick={() => setMobileMenuOpen(p => !p)}
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {mobileMenuOpen
+                  ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
               </svg>
             </button>
           </div>
         </div>
 
-        {/* منوی موبایل زیر هدر */}
+        {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-sky-100 bg-white/95">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 text-sm text-slate-700">
-              <button
-                className="text-left py-1"
-                onClick={() => {
-                  setSection("home");
-                  setMobileMenuOpen(false);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              >
-                Home
-              </button>
-              <button
-                className="text-left py-1"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  goToDashboardWithType("GA2");
-                }}
-              >
-                Algorithms
-              </button>
-              <button
-                className="text-left py-1"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  goToDashboardWithType("WISO");
-                }}
-              >
-                WISO
-              </button>
-              <button
-                className="text-left py-1"
-                onClick={() => {
-                  setSection("languages");
-                  setMobileMenuOpen(false);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              >
-                Programing Language
-              </button>
-              <button
-                className="text-left py-1"
-                onClick={() => {
-                  setSection("features");
-                  setMobileMenuOpen(false);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              >
-                Features
-              </button>
-              <button
-                className="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-semibold bg-sky-500 text-white"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  goToDashboardWithType("GA2");
-                }}
-              >
-                Pseudocode für IHK Prüfung
-              </button>
-              <button
-                className="text-left py-1"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  window.location.href = "/agent";
-                }}
-              >
-                AI Agent
-              </button>
+          <div className="md:hidden border-t border-slate-800 bg-slate-900">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm">
+              {[
+                { label: t.home, action: () => { setSection("home"); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+                { label: t.algorithms, action: () => { setMobileMenuOpen(false); goToDashboardWithType("GA2"); } },
+                { label: t.wiso, action: () => { setMobileMenuOpen(false); goToDashboardWithType("WISO"); } },
+                { label: t.javaPdf, action: () => { setSection("languages"); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+                { label: t.features, action: () => { setSection("features"); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+              ].map(item => (
+                <button type="button" key={item.label} className="text-left py-2 px-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" onClick={item.action}>
+                  {item.label}
+                </button>
+              ))}
+              <Link to="/agent" className="py-2 px-2 text-blue-400 hover:text-blue-300" onClick={() => setMobileMenuOpen(false)}>
+                {t.aiAgent}
+              </Link>
             </div>
           </div>
         )}
       </header>
 
-      {/* Main – سه "صفحه" مختلف براساس section */}
+      {/* Main content */}
       <main className="flex-1">
-        {section === "home" && <HomeSection scrollToId={scrollToId} />}
+        {section === "home" && <HomeSection goTo={goToDashboardWithType} />}
         {section === "features" && <FeaturesSection />}
         {section === "languages" && <ProgrammingLanguagesSection />}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-sky-100 bg-white/80 py-3">
+      <footer className="bg-slate-950 border-t border-slate-800 py-3">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-[11px] text-slate-500">
-            (c) 2024 FIAE Lernplattform (Algorithmen &amp; WISO) – Fachinformatiker
-            Anwendungsentwicklung.
-          </p>
+          <p className="text-[11px] text-slate-500">{t.footer}</p>
         </div>
       </footer>
     </div>
   );
 };
 
-/* ---------- صفحه‌ی اصلی (Home) ---------- */
+/* ── Home Section ── */
+const CARD_ACCENT: Record<string, string> = {
+  blue:    "border-blue-500/30 bg-blue-500/5 hover:border-blue-500/70 hover:bg-blue-500/10",
+  emerald: "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/70 hover:bg-emerald-500/10",
+  purple:  "border-purple-500/30 bg-purple-500/5 hover:border-purple-500/70 hover:bg-purple-500/10",
+  amber:   "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/70 hover:bg-amber-500/10",
+};
+const CARD_NUM_BG: Record<string, string> = {
+  blue:    "bg-blue-500/20 text-blue-400",
+  emerald: "bg-emerald-500/20 text-emerald-400",
+  purple:  "bg-purple-500/20 text-purple-400",
+  amber:   "bg-amber-500/20 text-amber-400",
+};
+const PATH_BORDER: Record<string, string> = {
+  blue:    "border-blue-500/25 hover:border-blue-500/60",
+  emerald: "border-emerald-500/25 hover:border-emerald-500/60",
+  purple:  "border-purple-500/25 hover:border-purple-500/60",
+  amber:   "border-amber-500/25 hover:border-amber-500/60",
+};
+const PATH_TAG: Record<string, string> = {
+  blue:    "text-blue-400",
+  emerald: "text-emerald-400",
+  purple:  "text-purple-400",
+  amber:   "text-amber-400",
+};
 
-const HomeSection: React.FC<{ scrollToId: (id: string) => void }> = ({
-  scrollToId,
-}) => {
+const HomeSection: React.FC<{
+  goTo: (type: "GA2" | "WISO" | "PRUEF") => void;
+}> = ({ goTo }) => {
+  const { t, isRTL } = useLanguage();
+  const cards = [
+    { num: 1, title: t.feat1Title, text: t.feat1Text, color: "blue",    dest: "GA2"   as const },
+    { num: 2, title: t.feat2Title, text: t.feat2Text, color: "emerald", dest: "WISO"  as const },
+    { num: 3, title: t.feat3Title, text: t.feat3Text, color: "purple",  dest: "PRUEF" as const },
+    { num: 4, title: t.feat4Title, text: t.feat4Text, color: "amber",   dest: "GA2"   as const },
+  ];
+  const paths = [
+    { num: 1, label: t.path1Label, sub: t.path1Sub, color: "blue",    dest: "GA2"   as const },
+    { num: 2, label: t.path2Label, sub: t.path2Sub, color: "emerald", dest: "WISO"  as const },
+    { num: 3, label: t.path3Label, sub: t.path3Sub, color: "purple",  dest: "PRUEF" as const },
+    { num: 4, label: t.path4Label, sub: t.path4Sub, color: "amber",   dest: "GA2"   as const },
+  ];
   return (
     <>
-      {/* Hero با عکس */}
-      <section
-        className="w-full min-h-[60vh] bg-cover bg-center flex items-center justify-center px-4"
-        style={{
-          // فایل را در public/server-room.png قرار بده
-          backgroundImage: "url('/server-room.png')",
-        }}
-      >
-        <div className="bg-black/55 backdrop-blur-sm rounded-2xl px-6 py-4 md:px-10 md:py-6">
-          <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-relaxed text-center rtl">
-            آموزش برنامه‌نویسی به زبان فارسی و المانی
+      {/* Hero */}
+      <section className="hero-bg w-full min-h-[52vh] flex items-end justify-center px-4 pb-10">
+        <div className="bg-slate-900/80 backdrop-blur-sm rounded-2xl px-8 py-5 text-center max-w-2xl w-full border border-slate-700/60">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white leading-snug mb-4" dir={isRTL ? "rtl" : "ltr"}>
+            {t.heroTitle}
           </h1>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button type="button" onClick={() => goTo("GA2")}
+              className="px-5 py-2 rounded-full text-sm font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm">
+              {t.heroBtn1}
+            </button>
+            <button type="button" onClick={() => goTo("WISO")}
+              className="px-5 py-2 rounded-full text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-sm">
+              {t.heroBtn2}
+            </button>
+            <button type="button" onClick={() => goTo("PRUEF")}
+              className="px-5 py-2 rounded-full text-sm font-semibold bg-purple-600 text-white hover:bg-purple-500 transition-colors shadow-sm">
+              {t.heroBtn3}
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* Features کوتاه در صفحه‌ی اصلی */}
-      <section id="features" className="max-w-6xl mx-auto px-4 pb-8 pt-6">
+      {/* Feature cards */}
+      <section id="features" className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid gap-4 md:grid-cols-4">
-          {[
-            {
-              title: "الگوریتم‌های پایه",
-              text: "BubbleSort, SelectionSort, Search, Komprimierung mit Pseudocode.",
-            },
-            {
-              title: "WISO",
-              text: "قانون‌ها و موضوعات پر تکرار و سوالات چهار گزینه‌ای به سبک IHK.",
-            },
-            {
-              title: "سوال‌های امتحانی",
-              text: "تمرین با سوالات اصلی و تحلیل فارسی برای فهم عمیق‌تر.",
-            },
-            {
-              title: "فایل‌های آموزشی",
-              text: "فایل‌های PDF برای الگوریتم، شبه‌کد و نکات مهم امتحانی.",
-            },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="rounded-2xl bg-white shadow-sm border border-sky-50 p-4 flex flex-col gap-2"
+          {cards.map(item => (
+            <button
+              type="button"
+              key={item.num}
+              onClick={() => goTo(item.dest)}
+              className={`rounded-2xl border p-4 flex flex-col gap-2 ${isRTL ? "text-right" : "text-left"} transition-all cursor-pointer ${CARD_ACCENT[item.color]}`}
+              dir={isRTL ? "rtl" : "ltr"}
             >
-              <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-sm font-bold">
-                {i + 1}
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold ${CARD_NUM_BG[item.color]}`}>
+                {item.num}
               </div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                {item.title}
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {item.text}
-              </p>
-            </div>
+              <h3 className="text-sm font-semibold text-slate-100">{item.title}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">{item.text}</p>
+              <span className="text-[10px] text-slate-500 mt-auto">{t.clickHere}</span>
+            </button>
           ))}
         </div>
       </section>
 
-      {/* مسیرهای یادگیری */}
+      {/* Learning paths */}
       <section className="max-w-6xl mx-auto px-4 pb-12">
-        <h2 className="text-center text-lg md:text-xl font-bold text-slate-900 mb-3">
-          مسیرهای اصلی یادگیری در این پلتفرم
+        <h2 className="text-center text-lg font-bold text-slate-100 mb-2" dir={isRTL ? "rtl" : "ltr"}>
+          {t.pathsTitle}
         </h2>
-        <p className="text-center text-xs md:text-sm text-slate-600 mb-6 max-w-2xl mx-auto">
-          همه‌ی این مسیرها در Dashboard داخلی با Masterfileها، Quiz و PDF قابل
-          استفاده است. هدف این است که فقط چیزهای لازم برای قبولی را تمرین کنی.
+        <p className="text-center text-xs text-slate-400 mb-6 max-w-2xl mx-auto" dir={isRTL ? "rtl" : "ltr"}>
+          {t.pathsDesc}
         </p>
-
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            "مسیر Algorithmen (GA2)",
-            "مسیر WISO (قانون و اقتصاد)",
-            "تمرین‌های امتحان‌های قدیمی",
-            "ترفندها و اشتباهات رایج در امتحان",
-          ].map((label, i) => (
-            <div
-              key={i}
-              className="rounded-2xl bg-white shadow-sm border border-sky-50 px-4 py-5 flex flex-col justify-between"
+        <div className="grid gap-3 md:grid-cols-4">
+          {paths.map(item => (
+            <button
+              type="button"
+              key={item.num}
+              onClick={() => goTo(item.dest)}
+              className={`rounded-2xl bg-slate-800/60 border px-4 py-5 flex flex-col gap-2 ${isRTL ? "text-right" : "text-left"} transition-all hover:bg-slate-800 ${PATH_BORDER[item.color]}`}
+              dir={isRTL ? "rtl" : "ltr"}
             >
-              <div>
-                <p className="text-xs text-sky-500 font-semibold mb-1">
-                  مسیر شماره {i + 1}
-                </p>
-                <p className="text-sm font-semibold text-slate-900">{label}</p>
-              </div>
-              <button
-                onClick={() => scrollToId("features")}
-                className="mt-4 inline-flex items-center justify-end text-xs text-sky-600 hover:text-sky-700"
-              >
-                دیدن جزئیات بیشتر
-                <span className="ml-1">↓</span>
-              </button>
-            </div>
+              <p className={`text-[10px] font-semibold uppercase tracking-wide ${PATH_TAG[item.color]}`}>{t.pathNum} {item.num}</p>
+              <p className="text-sm font-semibold text-slate-100">{item.label}</p>
+              <p className="text-xs text-slate-400">{item.sub}</p>
+            </button>
           ))}
         </div>
       </section>
@@ -393,151 +424,66 @@ const HomeSection: React.FC<{ scrollToId: (id: string) => void }> = ({
   );
 };
 
-/* ---------- صفحه‌ی Features ---------- */
-
+/* ── Features Section ── */
 const FeaturesSection: React.FC = () => {
+  const { t, isRTL } = useLanguage();
+  const dir = isRTL ? "rtl" : "ltr";
+  const cards = [
+    { id: "masterfile", title: t.featCard1Title, body: t.featCard1Body },
+    { id: "wiso",       title: t.featCard2Title, body: t.featCard2Body },
+    { id: "ihk",        title: t.featCard3Title, body: t.featCard3Body },
+    { id: "bilingual",  title: t.featCard4Title, body: t.featCard4Body },
+  ];
+  const extras = [
+    { id: "step",   title: t.featExtra1Title, body: t.featExtra1Body, border: "border-blue-500/30 bg-blue-500/5",    head: "text-blue-400" },
+    { id: "errors", title: t.featExtra2Title, body: t.featExtra2Body, border: "border-emerald-500/30 bg-emerald-500/5", head: "text-emerald-400" },
+    { id: "pdf",    title: t.featExtra3Title, body: t.featExtra3Body, border: "border-purple-500/30 bg-purple-500/5", head: "text-purple-400" },
+  ];
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       <section className="text-center">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3">
-          ویژگی‌های اصلی FIAE Lernplattform
-        </h1>
-        <p className="text-sm md:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed rtl">
-          این وب‌اپ برای آماده‌سازی آزمون Fachinformatiker Anwendungsentwicklung
-          طراحی شده است. تمرکز روی GA2 (Algorithmen) و WISO است؛ با ترکیب متن
-          آلمانی برای امتحان و توضیحات فارسی برای فهم بهتر.
-        </p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-50 mb-3" dir={dir}>{t.featPageTitle}</h1>
+        <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed" dir={dir}>{t.featPageDesc}</p>
       </section>
-
       <section className="grid gap-4 md:grid-cols-2">
-        {/* Feature 1 */}
-        <div className="rounded-2xl bg-white shadow-sm border border-sky-50 p-5 flex flex-col gap-2">
-          <h2 className="text-sm md:text-base font-semibold text-slate-900">
-            ۱. Masterfileهای الگوریتم به سبک IHK
-          </h2>
-          <p className="text-xs md:text-sm text-slate-600 leading-relaxed rtl">
-            برای الگوریتم‌های پرتکرار مثل BubbleSort, SelectionSort, Suche,
-            Komprimierung، برای هرکدام یک Masterfile داری:
-            <br />
-            – توضیح کوتاه آلمانی
-            <br />
-            – شبه‌کد دقیقاً به سبک IHK
-            <br />– توضیحات فارسی و نکات امتحانی
-          </p>
-        </div>
-
-        {/* Feature 2 */}
-        <div className="rounded-2xl bg-white shadow-sm border border-sky-50 p-5 flex flex-col gap-2">
-          <h2 className="text-sm md:text-base font-semibold text-slate-900">
-            ۲. WISO فشرده و هدف‌دار
-          </h2>
-          <p className="text-xs md:text-sm text-slate-600 leading-relaxed rtl">
-            در بخش WISO فقط سراغ قانون‌ها و موضوعاتی می‌رویم که واقعاً در امتحان
-            می‌آیند: حقوق کار، بیمه‌های اجتماعی، مالیات، قراردادهای جمعی، حمایت
-            از مادران، اخراج و غیره. برای هر موضوع، یک خلاصه آلمانی، یک توضیح
-            فارسی و مثال امتحانی داری.
-          </p>
-        </div>
-
-        {/* Feature 3 */}
-        <div className="rounded-2xl bg-white shadow-sm border border-sky-50 p-5 flex flex-col gap-2">
-          <h2 className="text-sm md:text-base font-semibold text-slate-900">
-            ۳. تمرکز روی سبک سوالات IHK
-          </h2>
-          <p className="text-xs md:text-sm text-slate-600 leading-relaxed rtl">
-            به‌جای تئوری دانشگاهی، تمرکز روی همان چیزهایی است که در امتحان می‌آید:
-            امضای متدها، آرایه‌ها، حلقه‌ها و شرط‌ها در GA2 و سوال‌های چهارگزینه‌ای
-            در WISO. مثال‌ها تا حد امکان از امتحان‌های واقعی سال‌های قبل گرفته
-            شده‌اند.
-          </p>
-        </div>
-
-        {/* Feature 4 */}
-        <div className="rounded-2xl bg-white shadow-sm border border-sky-50 p-5 flex flex-col gap-2">
-          <h2 className="text-sm md:text-base font-semibold text-slate-900">
-            ۴. دو زبانه: آلمانی برای امتحان، فارسی برای فهم
-          </h2>
-          <p className="text-xs md:text-sm text-slate-600 leading-relaxed rtl">
-            متن اصلی معمولاً به آلمانی است تا به زبان امتحان عادت کنی، اما کنار
-            آن یا زیر آن نکته‌های فارسی می‌آید تا مفهوم را راحت‌تر بگیری. این کار
-            کمک می‌کند در جلسهٔ امتحان متن آلمانی را بهتر بفهمی و استرس کم‌تر
-            باشد.
-          </p>
-        </div>
+        {cards.map(f => (
+          <div key={f.id} className="rounded-2xl bg-slate-800/60 border border-slate-700 p-5 flex flex-col gap-2">
+            <h2 className="text-sm font-semibold text-slate-100" dir={dir}>{f.title}</h2>
+            <p className="text-xs text-slate-400 leading-relaxed" dir={dir}>{f.body}</p>
+          </div>
+        ))}
       </section>
-
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4 text-xs md:text-sm leading-relaxed rtl">
-          <h3 className="font-semibold text-sky-800 mb-1">تمرین گام‌به‌گام</h3>
-          <p className="text-sky-900/90">
-            هر الگوریتم با مثال ساده شروع می‌شود و کم‌کم به مثال‌های واقعی از
-            امتحان‌های قدیمی می‌رسد. این کار کمک می‌کند الگوها را سریع تشخیص
-            بدهی.
-          </p>
-        </div>
-        <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-xs md:text-sm leading-relaxed rtl">
-          <h3 className="font-semibold text-emerald-800 mb-1">
-            تحلیل اشتباهات رایج
-          </h3>
-          <p className="text-emerald-900/90">
-            در بسیاری از Masterfileها بخش «اشتباهات رایج» وجود دارد تا بدانی
-            داوطلب‌ها کجا معمولاً اشتباه می‌کنند و تو آن اشتباهات را تکرار نکنی.
-          </p>
-        </div>
-        <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-4 text-xs md:text-sm leading-relaxed rtl">
-          <h3 className="font-semibold text-indigo-800 mb-1">PDF و چاپ</h3>
-          <p className="text-indigo-900/90">
-            محتوای مهم به‌صورت PDF قابل چاپ طراحی شده است (فونت مناسب، بدون
-            اسکرول افقی و رنگ‌بندی ساده) تا بتوانی روی کاغذ هم راحت تمرین کنی.
-          </p>
-        </div>
+        {extras.map(c => (
+          <div key={c.id} className={`rounded-2xl border p-4 text-xs leading-relaxed ${c.border}`} dir={dir}>
+            <h3 className={`font-semibold mb-1 ${c.head}`}>{c.title}</h3>
+            <p className="text-slate-400">{c.body}</p>
+          </div>
+        ))}
       </section>
     </div>
   );
 };
 
-/* ---------- صفحه‌ی Programming Language: نمایش PDF ---------- */
-
+/* ── Programming Languages / Java PDF ── */
 const ProgrammingLanguagesSection: React.FC = () => {
+  const { t, isRTL } = useLanguage();
+  const dir = isRTL ? "rtl" : "ltr";
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <section className="text-center">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3">
-          آموزش زبان برنامه‌نویسی جاوا (PDF)
-        </h1>
-        <p className="text-sm md:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed rtl">
-          در این صفحه، جزوهٔ کامل آموزش جاوا به صورت فایل PDF نمایش داده می‌شود.
-          می‌توانی روی آن زوم کنی، ورق بزنی یا آن را دانلود و چاپ کنی.
-        </p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-50 mb-3" dir={dir}>{t.javaPdfTitle}</h1>
+        <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed" dir={dir}>{t.javaPdfDesc}</p>
       </section>
-
       <section>
-        <div className="w-full h-[75vh] md:h-[80vh] rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-slate-100">
-          {/* فایل را در public/java-intro.pdf قرار بده */}
-          <object
-            data="/java-intro.pdf#toolbar=1&navpanes=0&view=FitH"
-            type="application/pdf"
-            className="w-full h-full"
-          >
-            <iframe
-              src="/java-intro.pdf#toolbar=1&navpanes=0&view=FitH"
-              className="w-full h-full"
-              title="Java Einführung PDF"
-            />
+        <div className="w-full h-[75vh] rounded-2xl overflow-hidden shadow-lg border border-slate-700 bg-slate-800">
+          <object data="/java-intro.pdf#toolbar=1&navpanes=0&view=FitH" type="application/pdf" className="w-full h-full">
+            <iframe src="/java-intro.pdf#toolbar=1&navpanes=0&view=FitH" className="w-full h-full" title="Java Einführung PDF" />
           </object>
         </div>
-
-        <p className="mt-3 text-[11px] md:text-xs text-slate-500 text-right rtl">
-          اگر PDF در مرورگر درست نمایش داده نشد، می‌توانی آن را از لینک زیر دانلود
-          کنی و با یک برنامهٔ نمایش PDF باز کنی:
-          <br />
-          <a
-            href="/java-intro.pdf"
-            className="text-sky-600 hover:text-sky-700 underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            دانلود فایل آموزش جاوا
+        <p className="mt-3 text-[11px] text-slate-500 text-right" dir={dir}>
+          <a href="/java-intro.pdf" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noreferrer">
+            {t.javaPdfDownload}
           </a>
         </p>
       </section>

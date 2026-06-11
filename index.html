@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#3b82f6" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -43,46 +43,75 @@
         },
       }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&family=Vazirmatn:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Vazirmatn:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
       body {
         font-family: 'Inter', sans-serif;
       }
-      
+      .font-farsi, [dir="rtl"], .rtl {
+        font-family: 'Vazirmatn', 'Inter', sans-serif;
+      }
+      code, pre, .font-mono {
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-feature-settings: "liga" 1, "calt" 1;
+      }
+
+      /* Algorithm animation */
+      .algo-bar {
+        transition: height 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
+      }
+      .algo-bar.comparing { background-color: #f59e0b !important; transform: scaleY(1.05); }
+      .algo-bar.swapping  { background-color: #ef4444 !important; }
+      .algo-bar.sorted    { background-color: #10b981 !important; }
+
+      /* Pomodoro pulse */
+      @keyframes pomoPulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.7; }
+      }
+      .pomo-active { animation: pomoPulse 2s infinite; }
+
       /* Mobile PDF viewer fixes */
       @media (max-width: 768px) {
-        /* Make PDF viewer fullscreen on mobile */
         .pdf-viewer-container {
           position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
+          top: 0 !important; left: 0 !important;
+          right: 0 !important; bottom: 0 !important;
           z-index: 9999 !important;
         }
-        
-        /* Ensure PDF canvas is visible and properly sized */
-        canvas {
-          max-width: 100% !important;
-          height: auto !important;
-          touch-action: pinch-zoom !important;
-        }
-        
-        /* Make fullscreen button more visible on mobile */
-        button[title*="Fullscreen"] {
-          min-width: 44px !important;
-          min-height: 44px !important;
-        }
-        
-        /* Improve PDF text rendering */
-        .textLayer {
-          opacity: 1 !important;
-          mix-blend-mode: normal !important;
-        }
+        canvas { max-width: 100% !important; height: auto !important; touch-action: pinch-zoom !important; }
+        button[title*="Fullscreen"] { min-width: 44px !important; min-height: 44px !important; }
+        .textLayer { opacity: 1 !important; mix-blend-mode: normal !important; }
       }
-    }
+
       .font-farsi {
         font-family: 'Vazirmatn', sans-serif;
+      }
+
+      .hero-bg {
+        background-image: url('/server-room.png');
+        background-size: cover;
+        background-position: center;
+      }
+
+      /* ── Safe Area (Capacitor / Notch) ── */
+      :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sar: env(safe-area-inset-right, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+      }
+      /* Push header below status bar on Android */
+      .safe-top    { padding-top:    var(--sat); }
+      .safe-bottom { padding-bottom: var(--sab); }
+
+      /* Reserve space for the mobile bottom nav */
+      .has-bottom-nav { padding-bottom: calc(64px + var(--sab)); }
+
+      /* Minimum touch target size */
+      .touch-target {
+        min-height: 44px;
+        min-width: 44px;
       }
       
       /* PDF / Print Optimization */

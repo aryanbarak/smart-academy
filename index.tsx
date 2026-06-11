@@ -1,6 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { LanguageProvider } from './src/contexts/LanguageContext';
+import { initNative } from './src/native';
+
+void (async () => { try { await initNative(); } catch { /* non-native, ignore */ } })();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -10,6 +14,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <LanguageProvider>
+      <App />
+    </LanguageProvider>
   </React.StrictMode>
 );

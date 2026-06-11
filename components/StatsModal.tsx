@@ -2,6 +2,7 @@ import React from 'react';
 import { getStudyStats, formatTime, getAllLessonProgress } from '../utils/progress';
 import { getQuizStats } from '../utils/quiz';
 import { getFlashcardStats } from '../utils/flashcards';
+import WeakSpotsPanel from './WeakSpotsPanel';
 
 interface StatsModalProps {
   onClose: () => void;
@@ -168,6 +169,11 @@ const StatsModal: React.FC<StatsModalProps> = ({ onClose }) => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* KI Schwachstellenanalyse */}
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+            <WeakSpotsPanel />
           </div>
         </div>
       </div>

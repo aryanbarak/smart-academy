@@ -25,7 +25,7 @@ const InfoPanels: React.FC<InfoPanelsProps> = ({ type }) => {
       {/* Farsi Info Panel (RTL) */}
       <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow border border-gray-200 dark:border-gray-700" dir="rtl">
         <h3 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 font-farsi">
-          🇮🇷 محتوای دوره
+          🇦🇫 محتوای دوره
         </h3>
         <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-farsi">
            {isGA2

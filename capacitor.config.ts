@@ -4,16 +4,24 @@ const config: CapacitorConfig = {
   appId: 'com.fiae.lernplattform',
   appName: 'FIAE Lernplattform',
   webDir: 'dist',
-  bundledWebRuntime: false,
   server: {
     androidScheme: 'https'
   },
-  android: {
-    buildOptions: {
-      keystorePath: undefined,
-      keystoreAlias: undefined,
-    }
-  }
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 1500,
+      launchAutoHide: false,
+      backgroundColor: '#0f172a',
+      androidSplashResourceName: 'splash',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#0f172a',
+    },
+  },
 };
 
 export default config;
