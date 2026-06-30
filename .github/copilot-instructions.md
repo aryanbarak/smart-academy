@@ -1,4 +1,4 @@
-# FIAE Lernplattform – AI Agent Guide
+# Smart Academy – AI Agent Guide
 
 ## Architecture snapshot
 - React 19.2 + Vite entry in `App.tsx`; it centralises course tabs, timers, and toast notifications while lazy-loading heavy modals (`PdfFiles`, `SearchModal`, `StatsModal`, `QuizModal`, `FlashcardModal`, `ExamSimulation`) with `React.Suspense` to keep the initial bundle lean.

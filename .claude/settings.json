@@ -19,7 +19,8 @@
       "PowerShell($env:ANDROID_SDK_ROOT)",
       "PowerShell($paths = @\\(\"$env:LOCALAPPDATA\\\\Android\\\\Sdk\", \"C:\\\\Android\\\\Sdk\", \"C:\\\\Users\\\\$env:USERNAME\\\\AppData\\\\Local\\\\Android\\\\Sdk\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { Write-Host \"Found: $p\"; Get-ChildItem $p -Name | Select-Object -First 5 } })",
       "PowerShell($sdk = \"C:\\\\Users\\\\aryan\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; Get-ChildItem \"$sdk\\\\build-tools\" -Name | Select-Object -Last 3; Get-ChildItem \"$sdk\\\\platforms\" -Name -ErrorAction SilentlyContinue | Select-Object -Last 5; Get-ChildItem \"$sdk\\\\emulator\" -Name \"emulator.exe\" -ErrorAction SilentlyContinue | Select-Object -First 1)",
-      "PowerShell($sdk = \"C:\\\\Users\\\\aryan\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; & \"$sdk\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)"
+      "PowerShell($sdk = \"C:\\\\Users\\\\aryan\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; & \"$sdk\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)",
+      "Bash(git mv *)"
     ]
   }
 }

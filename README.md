@@ -1,4 +1,4 @@
-# FIAE Lernplattform (یادگیری برای فاخ‌اینفورماتیکر)
+# Smart Academy (یادگیری برای فاخ‌اینفورماتیکر)
 
 یک پلتفرم یادگیری تعاملی برای دانشجویان Fachinformatiker (FIAE)(متخصص توسعه نرم‌افزار) با محتوای دوزبانه (آلمانی و فارسی).
 
@@ -34,7 +34,7 @@
 
 ```bash
 git clone <your-repo-url>
-cd fiae-lernplattform
+cd smart-academy
 npm install
 ```
 
@@ -89,7 +89,7 @@ npm run preview
 ## 📁 ساختار پروژه
 
 ```
-fiae-lernplattform/
+smart-academy/
 ├── src/
 │   ├── App.tsx                 # کامپوننت اصلی
 │   ├── components/

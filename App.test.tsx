@@ -9,10 +9,10 @@ describe('App Component', () => {
     expect(container).toBeDefined();
   });
 
-  it('نمایش عنوان FIAE Lernplattform در header', () => {
+  it('نمایش عنوان Smart Academy در header', () => {
     render(<App />);
     const header = document.querySelector('h1');
-    expect(header?.textContent).toContain('FIAE');
+    expect(header?.textContent).toContain('Smart Academy');
   });
 
   it('نمایش بخش لکسیون‌ها', () => {

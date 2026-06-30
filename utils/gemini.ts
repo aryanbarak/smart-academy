@@ -55,49 +55,44 @@ export async function generateSpeech(text: string): Promise<ArrayBuffer> {
   return base64ToArrayBufferNode(base64Audio);
 }
 
-export async function askGeminiTutor(context: string, question: string): Promise<string> {
-  if (isBrowser) {
-    const res = await fetch('http://localhost:4000/api/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context, question }),
-    });
-    if (!res.ok) throw new Error('Tutor request failed');
-    const payload = await res.json();
-    return payload?.text || 'Ich konnte leider keine Antwort generieren.';
-  }
-
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: `Du bist ein hilfsbereiter Tutor für Fachinformatiker.\n\nKontext der Lektion:\n${context}\n\nFrage des Schülers:\n${question}\n\nAntworte kurz, präzise und verständlich auf Deutsch.`,
-  });
-  // response.text is a convenience; adapt if SDK structure differs
-  // @ts-ignore
-  return response.text || 'Ich konnte leider keine Antwort generieren.';
+export async function askGeminiTutor(_context: string, _question: string): Promise<string> {
+  return 'ℹ️ Der KI-Tutor benötigt einen Gemini API-Schlüssel. Bitte wende dich an den Administrator, um diese Funktion zu aktivieren.';
 }
 
 export async function simplifyText(text: string): Promise<string> {
-  if (isBrowser) {
-    const res = await fetch('http://localhost:4000/api/simplify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) throw new Error('Simplify request failed');
-    const payload = await res.json();
-    return payload?.text || 'Keine Vereinfachung verfügbar.';
-  }
+  // Local simplification: split into bullet points by sentence/newline
+  const lines = text
+    .split(/[.\n]/)
+    .map(s => s.trim())
+    .filter(s => s.length > 10);
 
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: `Erkläre den folgenden Text in extrem einfacher Sprache (wie für einen Anfänger), nutze Bulletpoints wenn nötig:\n\n"${text}"`,
+  if (lines.length === 0) return text;
+
+  const bullets = lines.map(line => `• ${line}`).join('\n');
+  return `📌 Vereinfachte Version:\n\n${bullets}`;
+}
+
+export function speakText(text: string, lang: string = 'de-DE'): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      reject(new Error('Speech synthesis not supported'));
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.onend = () => resolve();
+    utterance.onerror = (e) => reject(e);
+    window.speechSynthesis.speak(utterance);
   });
-  // @ts-ignore
-  return response.text || 'Keine Vereinfachung verfügbar.';
+}
+
+export function stopSpeech(): void {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
 }
 
 export async function playAudioData(audioBuffer: ArrayBuffer) {

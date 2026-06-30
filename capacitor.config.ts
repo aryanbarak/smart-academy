@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.fiae.lernplattform',
-  appName: 'FIAE Lernplattform',
+  appId: 'com.smartacademy.app',
+  appName: 'Smart Academy',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

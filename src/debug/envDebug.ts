@@ -1,5 +1,5 @@
 export function logEnvConfig() {
-  console.group("[ENV] FIAE Lernplattform config");
+  console.group("[ENV] Smart Academy config");
   console.log(
     "VITE_SUPABASE_URL:",
     import.meta.env.VITE_SUPABASE_URL ?? "<missing>"

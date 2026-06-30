@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fiae-lernplattform-v2';
+const CACHE_NAME = 'smart-academy-v2';
 const urlsToCache = [
   '/',
   '/index.html',

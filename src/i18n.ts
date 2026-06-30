@@ -45,7 +45,7 @@ export const ui = {
     pathNum: 'Pfad',
 
     // ── Features page ──
-    featPageTitle: 'Hauptfunktionen der FIAE Lernplattform',
+    featPageTitle: 'Hauptfunktionen der Smart Academy',
     featPageDesc: 'Diese Web-App ist für die Vorbereitung auf die FIAE-Prüfung konzipiert. Fokus auf GA2 (Algorithmen) und WISO — mit deutschen Texten für die Prüfung und Farsi-Erklärungen zum besseren Verständnis.',
     featCard1Title: '1. Masterfiles nach IHK-Standard',
     featCard1Body: 'Für BubbleSort, SelectionSort, Suche, Komprimierung — mit deutschem Text, IHK-Pseudocode und Farsi-Erklärungen.',
@@ -68,7 +68,7 @@ export const ui = {
     javaPdfDownload: 'Java-Lernheft herunterladen',
 
     // ── App header ──
-    platformName: 'FIAE Lernplattform',
+    platformName: 'Smart Academy',
     platformSub: 'Algorithmen · WISO · Prüfung',
     toHome: 'Zurück zur Startseite',
     tabGA2: 'Algorithmen',
@@ -98,7 +98,7 @@ export const ui = {
     progressBar: (done: number, total: number) => `Fortschritt: ${done} von ${total}`,
 
     // ── Footer ──
-    footer: '© 2024–2025 FIAE Lernplattform (Algorithmen & WISO) — Fachinformatiker Anwendungsentwicklung',
+    footer: '© 2024–2025 Smart Academy (Algorithmen & WISO) — Fachinformatiker Anwendungsentwicklung',
 
     // ── AgentPage ──
     agentBack: 'Startseite',
@@ -147,7 +147,7 @@ export const ui = {
     pathNum: 'مسیر',
 
     // ── Features page ──
-    featPageTitle: 'ویژگی‌های اصلی FIAE Lernplattform',
+    featPageTitle: 'ویژگی‌های اصلی Smart Academy',
     featPageDesc: 'این وب‌اپ برای آماده‌سازی آزمون Fachinformatiker Anwendungsentwicklung طراحی شده. تمرکز روی GA2 (Algorithmen) و WISO — با متن آلمانی برای امتحان و توضیحات فارسی.',
     featCard1Title: '۱. Masterfileهای الگوریتم به سبک IHK',
     featCard1Body: 'برای BubbleSort، SelectionSort، Suche، Komprimierung — شامل توضیح آلمانی، شبه‌کد IHK و توضیحات فارسی.',

@@ -1,4 +1,4 @@
-# راهنمای ساخت اپلیکیشن اندروید - FIAE Lernplattform
+# راهنمای ساخت اپلیکیشن اندروید - Smart Academy
 
 ## وضعیت فعلی ✅
 
@@ -6,8 +6,8 @@
 - ✅ Capacitor نصب شد
 - ✅ پلتفرم Android اضافه شد
 - ✅ پروژه build و sync شد
-- ✅ نام اپ تنظیم شد: **FIAE Lernplattform**
-- ✅ Package name: **com.fiae.lernplattform**
+- ✅ نام اپ تنظیم شد: **Smart Academy**
+- ✅ Package name: **com.smartacademy.app**
 
 ## مراحل باقیمانده برای ساخت APK
 
@@ -55,7 +55,7 @@ cd C:\Android\cmdline-tools\bin
 
 #### مرحله 4: ساخت APK
 ```bash
-cd C:\Users\aryan\OneDrive\Desktop\fiae-lernplattform\android
+cd C:\Users\aryan\OneDrive\Desktop\smart-academy\android
 .\gradlew assembleDebug
 ```
 
