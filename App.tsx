@@ -334,7 +334,7 @@ const App: React.FC = () => {
         ) : (
           <>
             {/* ===== DASHBOARD WIDGET BAR ===== */}
-            <div className="max-w-6xl mx-auto px-4 pt-4 pb-0">
+            <div className="max-w-6xl mx-auto px-4 pt-6 md:pt-4 pb-0">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
 
                 {/* Continue last lesson */}
