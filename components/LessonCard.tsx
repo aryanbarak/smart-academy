@@ -116,7 +116,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
     : 'text-slate-900 dark:text-slate-50';
 
   const typeLabel =
-    lesson.type === 'PRUEF' ? 'Pruefung' : lesson.type;
+    lesson.type === 'PRUEF' ? 'Prüfung' : lesson.type;
 
   return (
     <article
