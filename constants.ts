@@ -2929,8 +2929,8 @@ Käuferpflichten:
   {
     id: 'wiso-exam-06',
     type: 'WISO',
-    title: 'WISO Exam Questions 16-18',
-    subtitle: 'Real IHK Exam Questions',
+    title: 'WISO Prüfungsfragen 16-18',
+    subtitle: 'Echte IHK Prüfungsfragen',
     level: 'Prüfung',
     order: 306,
     sections: [
@@ -2961,8 +2961,8 @@ Käuferpflichten:
   {
     id: 'wiso-exam-07',
     type: 'WISO',
-    title: 'WISO Exam Questions 19-21',
-    subtitle: 'Real IHK Exam Questions',
+    title: 'WISO Prüfungsfragen 19-21',
+    subtitle: 'Echte IHK Prüfungsfragen',
     level: 'Prüfung',
     order: 307,
     sections: [
@@ -2993,8 +2993,8 @@ Käuferpflichten:
   {
     id: 'wiso-exam-08',
     type: 'WISO',
-    title: 'WISO Exam Questions 22-24',
-    subtitle: 'Real IHK Exam Questions',
+    title: 'WISO Prüfungsfragen 22-24',
+    subtitle: 'Echte IHK Prüfungsfragen',
     level: 'Prüfung',
     order: 308,
     sections: [
@@ -3025,8 +3025,8 @@ Käuferpflichten:
   {
     id: 'wiso-exam-09',
     type: 'WISO',
-    title: 'WISO Exam Questions 25-27',
-    subtitle: 'Real IHK Exam Questions',
+    title: 'WISO Prüfungsfragen 25-27',
+    subtitle: 'Echte IHK Prüfungsfragen',
     level: 'Prüfung',
     order: 309,
     sections: [
@@ -3057,8 +3057,8 @@ Käuferpflichten:
   {
     id: 'wiso-exam-10',
     type: 'WISO',
-    title: 'WISO Exam Questions 28-30',
-    subtitle: 'Real IHK Exam Questions',
+    title: 'WISO Prüfungsfragen 28-30',
+    subtitle: 'Echte IHK Prüfungsfragen',
     level: 'Prüfung',
     order: 310,
     sections: [
