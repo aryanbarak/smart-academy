@@ -25,6 +25,7 @@ import { isBookmarked, toggleBookmark } from './utils/bookmarks';
 import { getErrorBankCount } from './utils/errorBank';
 import LandingPage from './components/LandingPage';
 import AgentPage from './components/AgentPage';
+import PrivacyPage from './src/pages/PrivacyPage';
 import ExamCountdown from './components/ExamCountdown';
 import MobileBottomNav from './components/MobileBottomNav';
 import { logEnvConfig } from './src/debug/envDebug';
@@ -469,7 +470,9 @@ const App: React.FC = () => {
 
       <footer className="hidden md:block bg-slate-950 text-slate-400 border-t border-slate-800 py-2 mt-auto no-print">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-[11px]">{t.footer}</p>
+          <p className="text-[11px]">
+            {t.footer} · <Link to="/privacy" className="text-slate-400 hover:text-slate-200 underline">Datenschutz</Link>
+          </p>
         </div>
       </footer>
 
@@ -497,6 +500,7 @@ const App: React.FC = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/agent" element={<AgentPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/*" element={view === 'landing' ? landingContent : appContent} />
       </Routes>
     </BrowserRouter>

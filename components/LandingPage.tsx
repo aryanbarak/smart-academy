@@ -300,7 +300,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
       {/* Footer */}
       <footer className="bg-slate-950 border-t border-slate-800 py-3">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-[11px] text-slate-500">{t.footer}</p>
+          <p className="text-[11px] text-slate-500">
+            {t.footer} · <Link to="/privacy" className="text-blue-400 hover:text-blue-300 underline">Datenschutz</Link>
+          </p>
         </div>
       </footer>
     </div>
