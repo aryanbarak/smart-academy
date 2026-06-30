@@ -176,8 +176,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-              FL
+            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
+              <img src="/smart-academy-48.png" alt="Smart Academy" className="w-full h-full object-cover" />
             </div>
             <div className="hidden sm:flex flex-col">
               <span className="text-sm font-semibold text-slate-50 tracking-tight">{t.platformName}</span>
@@ -207,20 +207,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
               className="px-3 py-1 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/80 transition-all"
             >
               {t.wiso}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setSection("languages"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${section === "languages" ? "bg-blue-500 text-white shadow-sm" : "text-slate-300 hover:text-white hover:bg-slate-700/80"}`}
-            >
-              {t.javaPdf}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setSection("features"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${section === "features" ? "bg-blue-500 text-white shadow-sm" : "text-slate-300 hover:text-white hover:bg-slate-700/80"}`}
-            >
-              {t.features}
             </button>
             <Link to="/agent" className="px-3 py-1 rounded-full text-xs font-semibold text-blue-400 hover:text-white hover:bg-blue-600 transition-all">
               {t.aiAgent}
@@ -275,8 +261,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
                 { label: t.home, action: () => { setSection("home"); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } },
                 { label: t.algorithms, action: () => { setMobileMenuOpen(false); goToDashboardWithType("GA2"); } },
                 { label: t.wiso, action: () => { setMobileMenuOpen(false); goToDashboardWithType("WISO"); } },
-                { label: t.javaPdf, action: () => { setSection("languages"); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } },
-                { label: t.features, action: () => { setSection("features"); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } },
               ].map(item => (
                 <button type="button" key={item.label} className="text-left py-2 px-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" onClick={item.action}>
                   {item.label}
@@ -293,8 +277,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
       {/* Main content */}
       <main className="flex-1">
         {section === "home" && <HomeSection goTo={goToDashboardWithType} />}
-        {section === "features" && <FeaturesSection />}
-        {section === "languages" && <ProgrammingLanguagesSection />}
       </main>
 
       {/* Footer */}
@@ -354,27 +336,7 @@ const HomeSection: React.FC<{
   return (
     <>
       {/* Hero */}
-      <section className="hero-bg w-full min-h-[52vh] flex items-end justify-center px-4 pb-10">
-        <div className="bg-slate-900/80 backdrop-blur-sm rounded-2xl px-8 py-5 text-center max-w-2xl w-full border border-slate-700/60">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white leading-snug mb-4" dir={isRTL ? "rtl" : "ltr"}>
-            {t.heroTitle}
-          </h1>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <button type="button" onClick={() => goTo("GA2")}
-              className="px-5 py-2 rounded-full text-sm font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm">
-              {t.heroBtn1}
-            </button>
-            <button type="button" onClick={() => goTo("WISO")}
-              className="px-5 py-2 rounded-full text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-sm">
-              {t.heroBtn2}
-            </button>
-            <button type="button" onClick={() => goTo("PRUEF")}
-              className="px-5 py-2 rounded-full text-sm font-semibold bg-purple-600 text-white hover:bg-purple-500 transition-colors shadow-sm">
-              {t.heroBtn3}
-            </button>
-          </div>
-        </div>
-      </section>
+      <section className="hero-bg w-full min-h-[52vh]" />
 
       {/* Feature cards */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-8">
@@ -400,12 +362,6 @@ const HomeSection: React.FC<{
 
       {/* Learning paths */}
       <section className="max-w-6xl mx-auto px-4 pb-12">
-        <h2 className="text-center text-lg font-bold text-slate-100 mb-2" dir={isRTL ? "rtl" : "ltr"}>
-          {t.pathsTitle}
-        </h2>
-        <p className="text-center text-xs text-slate-400 mb-6 max-w-2xl mx-auto" dir={isRTL ? "rtl" : "ltr"}>
-          {t.pathsDesc}
-        </p>
         <div className="grid gap-3 md:grid-cols-4">
           {paths.map(item => (
             <button

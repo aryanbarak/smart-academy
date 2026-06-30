@@ -199,11 +199,9 @@ const App: React.FC = () => {
               type="button"
               onClick={() => setView('landing')}
               title={t.toHome}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm hover:opacity-80 transition-opacity ${
-                activeType === 'GA2' ? 'bg-blue-500' : activeType === 'WISO' ? 'bg-emerald-500' : 'bg-purple-500'
-              }`}
+              className="w-9 h-9 rounded-xl overflow-hidden hover:opacity-80 transition-opacity shadow-sm flex-shrink-0"
             >
-              FL
+              <img src="/smart-academy-48.png" alt="Smart Academy" className="w-full h-full object-cover" />
             </button>
 
             <div className="hidden sm:flex flex-col">

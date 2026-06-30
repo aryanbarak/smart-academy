@@ -12,14 +12,14 @@ const PdfFiles: React.FC<PdfFilesProps> = ({ onBack }) => {
   const modules = (import.meta as any).glob('/exam-materials/**/*', { as: 'url', eager: true }) as Record<string, string> | undefined;
 
   const entries = React.useMemo(() => {
-    if (!modules) return [] as { name: string; url: string; path: string }[];
-    console.log('ðŸ“¦ PdfFiles loaded modules:', modules);
-    return Object.entries(modules)
+    const pinned = [{ name: ‘Java-Einführung.pdf’, url: ‘/java-intro.pdf’, path: ‘/java-intro.pdf’ }];
+    if (!modules) return pinned;
+    const dynamic = Object.entries(modules)
       .map(([path, url]) => {
-        console.log('  File:', path, 'â†’ URL:', url);
-        return { path, url, name: path.split('/').pop() || path };
+        return { path, url, name: path.split(‘/’).pop() || path };
       })
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: ‘base’ }));
+    return [...pinned, ...dynamic];
   }, [modules]);
 
   const [selected, setSelected] = React.useState<{ name: string; url: string; path: string } | null>(null);
