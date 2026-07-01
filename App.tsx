@@ -10,6 +10,7 @@ import React, {
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { storageGet, storageSet, initStorage } from './utils/storage';
 import { useLanguage, LangToggle } from './src/contexts/LanguageContext';
 
@@ -144,6 +145,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     initStorage(); // migrate localStorage → @capacitor/preferences on first native launch
+    if (Capacitor.isNativePlatform()) {
+      // launchAutoHide is false — hide manually after React has rendered to prevent white flash
+      SplashScreen.hide({ fadeOutDuration: 200 });
+    }
     logEnvConfig();
     testSupabaseConnection();
   }, []);
