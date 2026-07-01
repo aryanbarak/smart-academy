@@ -9,6 +9,7 @@ import React, {
 
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { storageGet, storageSet, initStorage } from './utils/storage';
 import { useLanguage, LangToggle } from './src/contexts/LanguageContext';
 
@@ -177,6 +178,29 @@ const App: React.FC = () => {
       };
     }
   }, [expandedLessonId, lessonStartTime]);
+
+  // Android back-button handler
+  const lastBackPressRef = useRef<number>(0);
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const handler = CapApp.addListener('backButton', ({ canGoBack }) => {
+      // 1. Close mobile menu first
+      if (showMobileMenu) { setShowMobileMenu(false); return; }
+      // 2. Collapse expanded lesson
+      if (expandedLessonId) { setExpandedLessonId(null); return; }
+      // 3. If BrowserRouter has history (e.g. /agent → /), go back
+      if (canGoBack) { window.history.back(); return; }
+      // 4. On root: press twice within 2 s to exit
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2000) {
+        CapApp.exitApp();
+      } else {
+        lastBackPressRef.current = now;
+        addToast(t.pressBackAgain, 'info');
+      }
+    });
+    return () => { handler.then(h => h.remove()); };
+  }, [showMobileMenu, expandedLessonId, addToast, t.pressBackAgain]);
 
   // Derived dashboard data
   const stats = getStudyStats();
