@@ -12,13 +12,13 @@ const PdfFiles: React.FC<PdfFilesProps> = ({ onBack }) => {
   const modules = (import.meta as any).glob('/exam-materials/**/*', { as: 'url', eager: true }) as Record<string, string> | undefined;
 
   const entries = React.useMemo(() => {
-    const pinned = [{ name: ‘Java-Einführung.pdf’, url: ‘/java-intro.pdf’, path: ‘/java-intro.pdf’ }];
+    const pinned = [{ name: 'Java-Einführung.pdf', url: '/java-intro.pdf', path: '/java-intro.pdf' }];
     if (!modules) return pinned;
     const dynamic = Object.entries(modules)
       .map(([path, url]) => {
-        return { path, url, name: path.split(‘/’).pop() || path };
+        return { path, url, name: path.split('/').pop() || path };
       })
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: ‘base’ }));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     return [...pinned, ...dynamic];
   }, [modules]);
 
