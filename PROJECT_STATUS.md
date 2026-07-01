@@ -24,7 +24,11 @@ Keep this file under 2 pages; update after every session.
 | 2026-06-30 | Deployed to academy.barakzai.cloud | Cloudflare Pages + custom domain |
 | 2026-06-30 | Keystore created: smart-academy-release.keystore | Required for Google Play release signing |
 | 2026-06-30 | AAB Build working (Lint excluded) | lintVitalAnalyzeRelease fails due to Kotlin/Gradle version mismatch |
-
+| 2026-07-01 | Logo size increased w-9→w-10 in navbar | Better visibility |
+| 2026-07-01 | Weitermachen card: purple-to-blue gradient | More engaging UI |
+| 2026-07-01 | Lesson cards: subtle indigo glow on hover | Polish |
+| 2026-07-01 | Badges: solid bg-*-600 text-white (vibrant) | Better readability |
+| 2026-07-01 | Lesson cards: fadeInUp animation on mount | Smooth UX |
 ---
 
 ## Known Bugs
