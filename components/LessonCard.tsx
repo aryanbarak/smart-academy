@@ -32,15 +32,15 @@ const ACCENT_BAR: Record<AccentColor, string> = {
 };
 
 const BADGE_LIGHT: Record<AccentColor, string> = {
-  blue:    'bg-blue-50 text-blue-700 border-blue-100',
-  emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  purple:  'bg-purple-50 text-purple-700 border-purple-100',
+  blue:    'bg-blue-600 text-white border-blue-600',
+  emerald: 'bg-emerald-600 text-white border-emerald-600',
+  purple:  'bg-purple-600 text-white border-purple-600',
 };
 
 const BADGE_DARK: Record<AccentColor, string> = {
-  blue:    'dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-900/40',
-  emerald: 'dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-900/40',
-  purple:  'dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-900/40',
+  blue:    '',
+  emerald: '',
+  purple:  '',
 };
 
 const ICON_BG: Record<AccentColor, string> = {
@@ -120,7 +120,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
 
   return (
     <article
-      className={`relative rounded-xl border bg-white/80 dark:bg-slate-900/80 transition-all duration-200 overflow-hidden group ${borderClass}`}
+      className={`relative rounded-xl border bg-white/80 dark:bg-slate-900/80 transition-all duration-200 overflow-hidden group lesson-card-animate hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] ${borderClass}`}
     >
       {/* Accent bar */}
       <div className={`absolute inset-y-0 left-0 w-1.5 rounded-tr-xl rounded-br-xl ${ACCENT_BAR[accent]}`} />

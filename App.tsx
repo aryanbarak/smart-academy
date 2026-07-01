@@ -199,7 +199,7 @@ const App: React.FC = () => {
               type="button"
               onClick={() => setView('landing')}
               title={t.toHome}
-              className="w-9 h-9 rounded-xl overflow-hidden hover:opacity-80 transition-opacity shadow-sm flex-shrink-0"
+              className="w-12 h-12 rounded-xl overflow-hidden hover:opacity-80 transition-opacity shadow-sm flex-shrink-0"
             >
               <img src="/smart-academy-48.png" alt="Smart Academy" className="w-full h-full object-cover" />
             </button>
@@ -343,19 +343,19 @@ const App: React.FC = () => {
                       setActiveType(lastAccessed.lesson.type);
                       setExpandedLessonId(lastAccessed.lesson.id);
                     }}
-                    className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all text-left group"
+                    className="flex items-center gap-3 p-3.5 rounded-xl border border-transparent bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 hover:shadow-md transition-all text-left group"
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0 ${lastAccessed.lesson.type === 'GA2' ? 'bg-blue-500' : lastAccessed.lesson.type === 'WISO' ? 'bg-emerald-500' : 'bg-purple-500'}`}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0 bg-white/20">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wide">{t.continueLearning}</p>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      <p className="text-[10px] text-white/70 uppercase tracking-wide">{t.continueLearning}</p>
+                      <p className="text-sm font-semibold text-white truncate transition-colors">
                         {lastAccessed.lesson.title}
                       </p>
-                      <p className="text-[10px] text-slate-400">{lastAccessed.lesson.type} · #{lastAccessed.lesson.order}</p>
+                      <p className="text-[10px] text-white/70">{lastAccessed.lesson.type} · #{lastAccessed.lesson.order}</p>
                     </div>
-                    <svg className="w-4 h-4 text-slate-300 group-hover:text-blue-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-white/70 group-hover:text-white transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>

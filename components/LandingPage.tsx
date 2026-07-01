@@ -176,7 +176,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
+            <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
               <img src="/smart-academy-48.png" alt="Smart Academy" className="w-full h-full object-cover" />
             </div>
             <div className="hidden sm:flex flex-col">
