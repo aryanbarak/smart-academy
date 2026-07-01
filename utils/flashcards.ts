@@ -1,3 +1,5 @@
+import { storageGet, storageSet } from './storage';
+
 // Flashcard generation and spaced repetition
 
 export interface Flashcard {
@@ -93,7 +95,7 @@ export function saveFlashcards(cards: Flashcard[]): void {
       }
     });
     
-    localStorage.setItem(FLASHCARDS_KEY, JSON.stringify(merged));
+    storageSet(FLASHCARDS_KEY, JSON.stringify(merged));
   } catch (e) {
     console.error('Failed to save flashcards:', e);
   }
@@ -101,7 +103,7 @@ export function saveFlashcards(cards: Flashcard[]): void {
 
 export function getAllFlashcards(): Flashcard[] {
   try {
-    const data = localStorage.getItem(FLASHCARDS_KEY);
+    const data = storageGet(FLASHCARDS_KEY);
     if (!data) return [];
     return JSON.parse(data);
   } catch {
@@ -120,7 +122,7 @@ export function getFlashcardsByLesson(lessonId: string): Flashcard[] {
 // Spaced Repetition (SM-2 Algorithm)
 export function getReview(cardId: string): FlashcardReview | null {
   try {
-    const data = localStorage.getItem(REVIEWS_KEY);
+    const data = storageGet(REVIEWS_KEY);
     if (!data) return null;
     const reviews: Record<string, FlashcardReview> = JSON.parse(data);
     return reviews[cardId] || null;
@@ -131,7 +133,7 @@ export function getReview(cardId: string): FlashcardReview | null {
 
 export function getAllReviews(): Record<string, FlashcardReview> {
   try {
-    const data = localStorage.getItem(REVIEWS_KEY);
+    const data = storageGet(REVIEWS_KEY);
     if (!data) return {};
     return JSON.parse(data);
   } catch {
@@ -196,7 +198,7 @@ export function recordReview(cardId: string, quality: number): FlashcardReview {
   allReviews[cardId] = review;
   
   try {
-    localStorage.setItem(REVIEWS_KEY, JSON.stringify(allReviews));
+    storageSet(REVIEWS_KEY, JSON.stringify(allReviews));
   } catch (e) {
     console.error('Failed to save review:', e);
   }

@@ -1,3 +1,5 @@
+import { storageGet, storageSet, storageRemove } from './storage';
+
 export interface ErrorBankEntry {
   id: string;
   questionId: string;
@@ -19,13 +21,13 @@ const KEY = 'fiae_error_bank';
 
 function load(): ErrorBankEntry[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = storageGet(KEY);
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
 
 function save(entries: ErrorBankEntry[]): void {
-  try { localStorage.setItem(KEY, JSON.stringify(entries)); } catch { /* noop */ }
+  try { storageSet(KEY, JSON.stringify(entries)); } catch { /* noop */ }
 }
 
 export function addToErrorBank(entry: Omit<ErrorBankEntry, 'id' | 'addedAt' | 'reviewCount' | 'mastered'>): void {
@@ -70,5 +72,5 @@ export function removeFromErrorBank(id: string): void {
 }
 
 export function clearErrorBank(): void {
-  localStorage.removeItem(KEY);
+  storageRemove(KEY);
 }

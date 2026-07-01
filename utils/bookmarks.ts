@@ -1,3 +1,5 @@
+import { storageGet, storageSet } from './storage';
+
 // Bookmark and notes utilities
 
 export interface Bookmark {
@@ -18,7 +20,7 @@ const NOTES_KEY = 'fiae_lesson_notes';
 // Bookmarks
 export function getBookmarks(): Bookmark[] {
   try {
-    const data = localStorage.getItem(BOOKMARKS_KEY);
+    const data = storageGet(BOOKMARKS_KEY);
     if (!data) return [];
     return JSON.parse(data);
   } catch {
@@ -39,7 +41,7 @@ export function toggleBookmark(lessonId: string): boolean {
     if (index >= 0) {
       // Remove bookmark
       bookmarks.splice(index, 1);
-      localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+      storageSet(BOOKMARKS_KEY, JSON.stringify(bookmarks));
       return false;
     } else {
       // Add bookmark
@@ -47,7 +49,7 @@ export function toggleBookmark(lessonId: string): boolean {
         lessonId,
         timestamp: Date.now()
       });
-      localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+      storageSet(BOOKMARKS_KEY, JSON.stringify(bookmarks));
       return true;
     }
   } catch (e) {
@@ -72,7 +74,7 @@ export function addBookmark(lessonId: string, note?: string): void {
       });
     }
     
-    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+    storageSet(BOOKMARKS_KEY, JSON.stringify(bookmarks));
   } catch (e) {
     console.error('Failed to add bookmark:', e);
   }
@@ -82,7 +84,7 @@ export function removeBookmark(lessonId: string): void {
   try {
     let bookmarks = getBookmarks();
     bookmarks = bookmarks.filter(b => b.lessonId !== lessonId);
-    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+    storageSet(BOOKMARKS_KEY, JSON.stringify(bookmarks));
   } catch (e) {
     console.error('Failed to remove bookmark:', e);
   }
@@ -91,7 +93,7 @@ export function removeBookmark(lessonId: string): void {
 // Notes
 export function getLessonNote(lessonId: string): LessonNote | null {
   try {
-    const data = localStorage.getItem(NOTES_KEY);
+    const data = storageGet(NOTES_KEY);
     if (!data) return null;
     const allNotes: Record<string, LessonNote> = JSON.parse(data);
     return allNotes[lessonId] || null;
@@ -102,7 +104,7 @@ export function getLessonNote(lessonId: string): LessonNote | null {
 
 export function saveLessonNote(lessonId: string, content: string): void {
   try {
-    const data = localStorage.getItem(NOTES_KEY);
+    const data = storageGet(NOTES_KEY);
     const allNotes: Record<string, LessonNote> = data ? JSON.parse(data) : {};
     
     allNotes[lessonId] = {
@@ -111,7 +113,7 @@ export function saveLessonNote(lessonId: string, content: string): void {
       lastUpdated: Date.now()
     };
     
-    localStorage.setItem(NOTES_KEY, JSON.stringify(allNotes));
+    storageSet(NOTES_KEY, JSON.stringify(allNotes));
   } catch (e) {
     console.error('Failed to save note:', e);
   }
@@ -119,13 +121,13 @@ export function saveLessonNote(lessonId: string, content: string): void {
 
 export function deleteLessonNote(lessonId: string): void {
   try {
-    const data = localStorage.getItem(NOTES_KEY);
+    const data = storageGet(NOTES_KEY);
     if (!data) return;
     
     const allNotes: Record<string, LessonNote> = JSON.parse(data);
     delete allNotes[lessonId];
     
-    localStorage.setItem(NOTES_KEY, JSON.stringify(allNotes));
+    storageSet(NOTES_KEY, JSON.stringify(allNotes));
   } catch (e) {
     console.error('Failed to delete note:', e);
   }
@@ -133,7 +135,7 @@ export function deleteLessonNote(lessonId: string): void {
 
 export function getAllNotes(): LessonNote[] {
   try {
-    const data = localStorage.getItem(NOTES_KEY);
+    const data = storageGet(NOTES_KEY);
     if (!data) return [];
     const allNotes: Record<string, LessonNote> = JSON.parse(data);
     return Object.values(allNotes);

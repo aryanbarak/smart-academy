@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useLanguage } from "../src/contexts/LanguageContext";
 
 const SYSTEM_PROMPT = `You are a helpful learning assistant for Smart Academy, an IHK exam preparation platform. Help students understand algorithms (BubbleSort, SelectionSort, InsertionSort, BinarySearch, LinearSearch), WISO topics (Arbeitsrecht, DSGVO, Sozialversicherung), and pseudocode. Answer in the same language the user writes in (German or Persian/Farsi).`;
 
@@ -84,6 +85,7 @@ const MD_COMPONENTS: React.ComponentProps<typeof ReactMarkdown>["components"] = 
 
 const AgentPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -91,6 +93,12 @@ const AgentPage: React.FC = () => {
 
   const handleAsk = async () => {
     if (!question.trim()) return;
+
+    if (!navigator.onLine) {
+      setError(t.agentOffline);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setAnswer("");
@@ -107,8 +115,15 @@ const AgentPage: React.FC = () => {
       });
 
       setAnswer(response.text ?? "Keine Antwort erhalten.");
-    } catch (err: any) {
-      setError(err.message || "Fehler beim Abrufen der Antwort.");
+    } catch (err: unknown) {
+      const isNetworkError =
+        err instanceof TypeError ||
+        (err instanceof Error && /network|fetch|failed/i.test(err.message));
+      if (isNetworkError) {
+        setError(t.agentNetworkError);
+      } else {
+        setError(err instanceof Error ? err.message : 'Unbekannter Fehler.');
+      }
     } finally {
       setLoading(false);
     }

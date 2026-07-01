@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../src/contexts/LanguageContext';
 import type { Lang } from '../src/i18n';
+import { storageGet, storageSet } from '../utils/storage';
 
 const STORAGE_KEY = 'fiae_exam_date';
 
@@ -128,7 +129,7 @@ interface Props {
 
 const ExamCountdown: React.FC<Props> = ({ compact = false }) => {
   const { t, isRTL, lang } = useLanguage();
-  const [examDateStr, setExamDateStr] = useState<string>(() => localStorage.getItem(STORAGE_KEY) || '');
+  const [examDateStr, setExamDateStr] = useState<string>(() => storageGet(STORAGE_KEY) || '');
   const [countdown, setCountdown] = useState<CountdownState | null>(null);
   const [editing, setEditing] = useState(!examDateStr);
   const [inputVal, setInputVal] = useState(examDateStr);
@@ -145,7 +146,7 @@ const ExamCountdown: React.FC<Props> = ({ compact = false }) => {
   const saveDate = () => {
     const d = new Date(inputVal);
     if (Number.isNaN(d.getTime())) return;
-    localStorage.setItem(STORAGE_KEY, inputVal);
+    storageSet(STORAGE_KEY, inputVal);
     setExamDateStr(inputVal);
     setEditing(false);
   };

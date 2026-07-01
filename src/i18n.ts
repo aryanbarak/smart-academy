@@ -109,6 +109,9 @@ export const ui = {
 
     // ── AgentPage ──
     agentBack: 'Startseite',
+    agentOffline: 'Der KI-Assistent benötigt eine Internetverbindung.',
+    agentNetworkError: 'Netzwerkfehler. Bitte überprüfe deine Verbindung und versuche es erneut.',
+    pressBackAgain: 'Nochmal drücken zum Beenden',
   },
   fa: {
     // ── Navigation ──
@@ -218,6 +221,9 @@ export const ui = {
 
     // ── AgentPage ──
     agentBack: 'صفحه اصلی',
+    agentOffline: 'دستیار هوش مصنوعی به اتصال به اینترنت نیاز دارد.',
+    agentNetworkError: 'خطای شبکه. لطفاً اتصال خود را بررسی کن و دوباره امتحان کن.',
+    pressBackAgain: 'دوباره فشار دهید برای خروج',
   },
 } as const;
 

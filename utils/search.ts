@@ -141,9 +141,11 @@ export function highlightText(text: string, start: number, end: number): { befor
   };
 }
 
+import { storageGet, storageSet, storageRemove } from './storage';
+
 export function getRecentSearches(): string[] {
   try {
-    const data = localStorage.getItem('fiae_recent_searches');
+    const data = storageGet('fiae_recent_searches');
     if (!data) return [];
     return JSON.parse(data);
   } catch {
@@ -166,7 +168,7 @@ export function saveRecentSearch(query: string): void {
       searches = searches.slice(0, 10);
     }
     
-    localStorage.setItem('fiae_recent_searches', JSON.stringify(searches));
+    storageSet('fiae_recent_searches', JSON.stringify(searches));
   } catch (e) {
     console.error('Failed to save recent search:', e);
   }
@@ -174,7 +176,7 @@ export function saveRecentSearch(query: string): void {
 
 export function clearRecentSearches(): void {
   try {
-    localStorage.removeItem('fiae_recent_searches');
+    storageRemove('fiae_recent_searches');
   } catch (e) {
     console.error('Failed to clear recent searches:', e);
   }

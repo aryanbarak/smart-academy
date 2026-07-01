@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { ui } from '../i18n';
 import type { Lang, UI } from '../i18n';
+import { storageGet, storageSet } from '../../utils/storage';
 
 interface LanguageContextType {
   lang: Lang;
@@ -18,12 +19,12 @@ const LanguageContext = createContext<LanguageContextType>({
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<Lang>(() => {
-    return (localStorage.getItem('fiae_lang') as Lang) ?? 'de';
+    return (storageGet('fiae_lang') as Lang) ?? 'de';
   });
 
   const setLang = (l: Lang) => {
     setLangState(l);
-    localStorage.setItem('fiae_lang', l);
+    storageSet('fiae_lang', l);
     document.documentElement.dir = l === 'fa' ? 'rtl' : 'ltr';
     document.documentElement.lang = l === 'fa' ? 'fa' : 'de';
     if (l === 'fa') {

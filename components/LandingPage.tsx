@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage, LangToggle } from "../src/contexts/LanguageContext";
+import { storageGet, storageSet } from "../utils/storage";
 
 interface LandingPageProps {
   onStart: () => void;
@@ -68,10 +69,10 @@ const OnboardingWizard: React.FC<{
     } else {
       const goal = state.goal ?? "GA2";
       const target = goal === "BOTH" ? "GA2" : goal;
-      localStorage.setItem("landingTarget", target);
-      localStorage.setItem("fiae_onboarding_done", "1");
-      localStorage.setItem("fiae_onboarding_time", state.time ?? "30");
-      localStorage.setItem("fiae_onboarding_level", state.level ?? "mid");
+      storageSet("landingTarget", target);
+      storageSet("fiae_onboarding_done", "1");
+      storageSet("fiae_onboarding_time", state.time ?? "30");
+      storageSet("fiae_onboarding_level", state.level ?? "mid");
       onDone(goal);
     }
   };
@@ -144,12 +145,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const { t } = useLanguage();
   const [section, setSection] = useState<"home" | "features" | "languages">("home");
   const [showOnboarding, setShowOnboarding] = useState(
-    () => localStorage.getItem("fiae_onboarding_done") === null
+    () => storageGet("fiae_onboarding_done") === null
   );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const goToDashboardWithType = (type: "GA2" | "WISO" | "PRUEF") => {
-    localStorage.setItem("landingTarget", type);
+    storageSet("landingTarget", type);
     onStart();
   };
 
@@ -163,7 +164,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             else goToDashboardWithType(goal);
           }}
           onSkip={() => {
-            localStorage.setItem("fiae_onboarding_done", "1");
+            storageSet("fiae_onboarding_done", "1");
             setShowOnboarding(false);
           }}
         />

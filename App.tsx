@@ -9,6 +9,7 @@ import React, {
 
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { storageGet, storageSet, initStorage } from './utils/storage';
 import { useLanguage, LangToggle } from './src/contexts/LanguageContext';
 
 import { LESSONS } from './constants';
@@ -69,7 +70,7 @@ function getLastAccessedLesson() {
 // Helper: flashcards due today
 function getDueFlashcardCount(): number {
   try {
-    const reviews = JSON.parse(localStorage.getItem('fiae_flashcard_reviews') || '{}');
+    const reviews = JSON.parse(storageGet('fiae_flashcard_reviews') ?? '{}');
     const now = Date.now();
     return Object.values(reviews).filter((r: unknown) => {
       const rev = r as { nextReview?: number };
@@ -89,7 +90,7 @@ const App: React.FC = () => {
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('darkMode');
+      const saved = storageGet('darkMode');
       if (saved !== null) return saved === 'true';
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
@@ -132,7 +133,7 @@ const App: React.FC = () => {
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
-    localStorage.setItem('darkMode', String(newMode));
+    storageSet('darkMode', String(newMode));
     document.documentElement.classList.toggle('dark', newMode);
   };
 
@@ -141,13 +142,14 @@ const App: React.FC = () => {
   }, [darkMode]);
 
   useEffect(() => {
+    initStorage(); // migrate localStorage → @capacitor/preferences on first native launch
     logEnvConfig();
     testSupabaseConnection();
   }, []);
 
   useEffect(() => {
     if (view === 'app' && typeof window !== 'undefined') {
-      const target = localStorage.getItem('landingTarget') as CourseType | null;
+      const target = storageGet('landingTarget') as CourseType | null;
       if (target === 'GA2' || target === 'WISO' || target === 'PRUEF') {
         setActiveType(target);
       }

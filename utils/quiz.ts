@@ -1,3 +1,5 @@
+import { storageGet, storageSet } from './storage';
+
 // Quiz generation and management
 
 export interface QuizQuestion {
@@ -209,7 +211,7 @@ function saveQuizHistory(session: QuizSession): void {
       history.splice(50);
     }
     
-    localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(history));
+    storageSet(QUIZ_HISTORY_KEY, JSON.stringify(history));
   } catch (e) {
     console.error('Failed to save quiz history:', e);
   }
@@ -217,7 +219,7 @@ function saveQuizHistory(session: QuizSession): void {
 
 export function getQuizHistory(): QuizSession[] {
   try {
-    const data = localStorage.getItem(QUIZ_HISTORY_KEY);
+    const data = storageGet(QUIZ_HISTORY_KEY);
     if (!data) return [];
     return JSON.parse(data);
   } catch {
@@ -247,7 +249,7 @@ function updateQuizStats(session: QuizSession): void {
     stats.byCategory[session.category].total += session.attempts.length;
     stats.byCategory[session.category].correct += session.score;
     
-    localStorage.setItem(QUIZ_STATS_KEY, JSON.stringify(stats));
+    storageSet(QUIZ_STATS_KEY, JSON.stringify(stats));
   } catch (e) {
     console.error('Failed to update quiz stats:', e);
   }
@@ -255,7 +257,7 @@ function updateQuizStats(session: QuizSession): void {
 
 export function getQuizStats(): QuizStats {
   try {
-    const data = localStorage.getItem(QUIZ_STATS_KEY);
+    const data = storageGet(QUIZ_STATS_KEY);
     if (!data) {
       return {
         totalQuizzes: 0,

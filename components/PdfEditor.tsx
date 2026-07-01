@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { storageGet, storageSet } from '../utils/storage';
 
 // Lightweight PDF editor using pdfjs-dist for rendering and pdf-lib for export
 // Features (v1): view pages, zoom, navigate, freehand drawing annotations per page, save annotated PDF
@@ -30,7 +31,7 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [continuous, setContinuous] = useState(() => {
     try {
-      const v = localStorage.getItem('fiae_pdf_continuous');
+      const v = storageGet('fiae_pdf_continuous');
       return v ? v === 'true' : true; // default to continuous
     } catch {
       return true;
@@ -598,7 +599,7 @@ const PdfEditor: React.FC<PdfEditorProps> = ({ url, onClose }) => {
             </div>
             <div className="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
             <button
-              onClick={() => setContinuous(c => { const nv = !c; try { localStorage.setItem('fiae_pdf_continuous', String(nv)); } catch {} return nv; })}
+              onClick={() => setContinuous(c => { const nv = !c; try { storageSet('fiae_pdf_continuous', String(nv)); } catch {} return nv; })}
               className={`px-3 py-2 text-xs border rounded ${continuous ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500'} min-h-[36px]`}
               title="Durchlaufender Modus"
             >

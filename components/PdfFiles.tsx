@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { addRecentFile, getRecentFiles, formatTimestamp, type RecentFile } from '../utils/recentFiles';
+import { storageRemove } from '../utils/storage';
 
 interface PdfFilesProps {
   onBack?: () => void;
@@ -248,7 +249,7 @@ const PdfFiles: React.FC<PdfFilesProps> = ({ onBack }) => {
                   <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2 flex items-center justify-between">
                     <span>KÃ¼rzlich angesehen ({recentFiles.length})</span>
                     {recentFiles.length > 0 && (
-                      <button onClick={() => { localStorage.removeItem('fiae_recent_files'); setRecentFiles([]); }} className="text-red-500 hover:text-red-700 text-xs">
+                      <button onClick={() => { storageRemove('fiae_recent_files'); setRecentFiles([]); }} className="text-red-500 hover:text-red-700 text-xs">
                         LÃ¶schen
                       </button>
                     )}

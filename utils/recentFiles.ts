@@ -1,3 +1,5 @@
+import { storageGet, storageSet, storageRemove } from './storage';
+
 // Recently viewed files management with localStorage
 
 export interface RecentFile {
@@ -25,12 +27,12 @@ export const addRecentFile = (file: { name: string; url: string; path: string })
   // Keep only MAX_RECENT items
   const limited = filtered.slice(0, MAX_RECENT);
   
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
+  storageSet(STORAGE_KEY, JSON.stringify(limited));
 };
 
 export const getRecentFiles = (): RecentFile[] => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data = storageGet(STORAGE_KEY);
     if (!data) return [];
     return JSON.parse(data);
   } catch (e) {
@@ -40,7 +42,7 @@ export const getRecentFiles = (): RecentFile[] => {
 };
 
 export const clearRecentFiles = () => {
-  localStorage.removeItem(STORAGE_KEY);
+  storageRemove(STORAGE_KEY);
 };
 
 export const formatTimestamp = (timestamp: number): string => {
