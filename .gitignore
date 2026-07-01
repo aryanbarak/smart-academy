@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Android — generated build artifacts (may contain compiled env vars)
+android/app/src/main/assets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
