@@ -30,6 +30,13 @@ export const ui = {
     feat4Title: 'Lernmaterialien',
     feat4Text: 'PDF für Algorithmen, Pseudocode und wichtige Prüfungshinweise.',
     clickHere: 'Klicken →',
+    startLesson: 'Lektion starten →',
+    whatYouLearn: 'Was du lernst',
+    mobileHeroTitle: 'IHK-Prüfung auf Deutsch & Farsi',
+    mobileHeroSub: 'Algorithmen, WISO & KI-Lernassistent',
+    mobileHeroCta: 'Jetzt lernen',
+    dueNone: 'Nichts fällig 🎉',
+    streakStart: 'Starte heute!',
 
     // ── Learning paths ──
     pathsTitle: 'Lernpfade in dieser Plattform',
@@ -132,6 +139,13 @@ export const ui = {
     feat4Title: 'فایل‌های آموزشی',
     feat4Text: 'PDF برای الگوریتم، شبه‌کد و نکات مهم امتحانی.',
     clickHere: 'کلیک کن ←',
+    startLesson: '← شروع درس',
+    whatYouLearn: 'چی یاد می‌گیری',
+    mobileHeroTitle: 'امتحان IHK به آلمانی و فارسی',
+    mobileHeroSub: 'الگوریتم‌ها، WISO و دستیار هوش مصنوعی',
+    mobileHeroCta: 'همین الان شروع کن',
+    dueNone: 'هیچی نیست 🎉',
+    streakStart: 'امروز شروع کن!',
 
     // ── Learning paths ──
     pathsTitle: 'مسیرهای اصلی یادگیری در این پلتفرم',

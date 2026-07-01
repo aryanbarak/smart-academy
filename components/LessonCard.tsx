@@ -18,7 +18,7 @@ interface LessonCardProps {
   children?: React.ReactNode;
 }
 
-// ─── style maps (no nested ternaries) ───────────────────────────────────────
+// ─── style maps ──────────────────────────────────────────────────────────────
 const BORDER_ACTIVE: Record<AccentColor, string> = {
   blue:    'border-blue-500 ring-1 ring-blue-500/70 shadow-md',
   emerald: 'border-emerald-500 ring-1 ring-emerald-500/70 shadow-md',
@@ -61,7 +61,7 @@ const PROGRESS_BAR: Record<AccentColor, string> = {
   purple:  'bg-purple-500',
 };
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ─── helpers ─────────────────────────────────────────────────────────────────
 function formatLastAccessed(ts?: number): string {
   if (!ts || ts === 0) return '';
   const mins  = Math.floor((Date.now() - ts) / 60000);
@@ -86,7 +86,7 @@ function estimateMinutes(lesson: LessonType): number {
   return Math.max(5, lesson.sections.length * 4);
 }
 
-// ─── component ──────────────────────────────────────────────────────────────
+// ─── component ───────────────────────────────────────────────────────────────
 const LessonCard: React.FC<LessonCardProps> = ({
   lesson, index, isActive, isCompleted, isBookmarked,
   timeSpent, lastAccessed,
@@ -96,12 +96,15 @@ const LessonCard: React.FC<LessonCardProps> = ({
   const ACCENT_MAP: Record<string, AccentColor> = { GA2: 'blue', WISO: 'emerald', PRUEF: 'purple' };
   const accent: AccentColor = ACCENT_MAP[lesson.type] ?? 'blue';
 
-  const estimate   = estimateMinutes(lesson);
-  const spentLabel = timeSpent && timeSpent > 0 ? formatTime(timeSpent) : null;
-  const lastLabel  = formatLastAccessed(lastAccessed);
+  const estimate    = estimateMinutes(lesson);
+  const spentLabel  = timeSpent && timeSpent > 0 ? formatTime(timeSpent) : null;
+  const lastLabel   = formatLastAccessed(lastAccessed);
   const progressPct = timeSpent && timeSpent > 0
     ? Math.min(100, Math.round((timeSpent / (estimate * 60)) * 100))
     : 0;
+
+  // Strip " Master" / " Masterfile" suffix for compact mobile display only
+  const displayTitle = lesson.title.replace(/ Master(file)?$/i, '');
 
   const borderClass = isActive
     ? BORDER_ACTIVE[accent]
@@ -115,8 +118,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
     ? TITLE_ACTIVE[accent]
     : 'text-slate-900 dark:text-slate-50';
 
-  const typeLabel =
-    lesson.type === 'PRUEF' ? 'Prüfung' : lesson.type;
+  const typeLabel = lesson.type === 'PRUEF' ? 'Prüfung' : lesson.type;
 
   return (
     <article
@@ -135,8 +137,82 @@ const LessonCard: React.FC<LessonCardProps> = ({
         </div>
       )}
 
-      <div className="flex items-stretch">
-        {/* ── Main clickable area ── */}
+      {/* ── MOBILE: compact single-row header (< md) ─────────────────────── */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="md:hidden w-full flex items-center gap-2 pl-4 pr-3 py-3 text-left focus:outline-none"
+      >
+        <span className={`flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide border ${BADGE_LIGHT[accent]}`}>
+          {typeLabel}
+        </span>
+        <span className={`flex-1 text-sm font-semibold line-clamp-2 leading-snug ${titleClass}`}>
+          {displayTitle}
+        </span>
+        {isCompleted && (
+          <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Abgeschlossen" />
+        )}
+        {isBookmarked && (
+          <span className="text-[11px] flex-shrink-0">🔖</span>
+        )}
+        <svg
+          className={`w-5 h-5 flex-shrink-0 transition-all duration-200 ${isActive ? `${TITLE_ACTIVE[accent]} rotate-180` : 'text-slate-400'}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* ── MOBILE: expanded details panel (< md, active only) ──────────── */}
+      {isActive && (
+        <div className="md:hidden border-t border-slate-100 dark:border-slate-800 px-5 py-3 space-y-2">
+          {lesson.subtitle && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{lesson.subtitle}</p>
+          )}
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-400">
+            <span>~{estimate} Min</span>
+            {spentLabel && (
+              <><span className="text-slate-600 dark:text-slate-600">·</span><span>{spentLabel} gelernt</span></>
+            )}
+            {lastLabel && (
+              <><span className="text-slate-600 dark:text-slate-600">·</span><span>{lastLabel}</span></>
+            )}
+            <span className="text-slate-600 dark:text-slate-600">·</span>
+            <span className="font-farsi" dir="rtl">{lesson.sections.length} بخش</span>
+          </div>
+          <div className="flex items-center gap-2 pt-0.5">
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onToggleComplete(); }}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                isCompleted
+                  ? 'text-emerald-400 bg-emerald-900/30 border-emerald-800'
+                  : 'text-slate-400 bg-slate-800 border-slate-700 hover:text-slate-200'
+              }`}
+            >
+              <svg className="w-3 h-3" fill={isCompleted ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {isCompleted ? 'Abgeschlossen' : 'Abschließen'}
+            </button>
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onToggleBookmark(); }}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                isBookmarked
+                  ? 'text-amber-400 bg-amber-900/30 border-amber-800'
+                  : 'text-slate-400 bg-slate-800 border-slate-700 hover:text-slate-200'
+              }`}
+            >
+              {isBookmarked ? '🔖 Entfernen' : '🔖 Markieren'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── DESKTOP: full layout (≥ md) ──────────────────────────────────── */}
+      <div className="hidden md:flex items-stretch">
+        {/* Main clickable area */}
         <button
           type="button"
           onClick={onToggle}
@@ -183,9 +259,9 @@ const LessonCard: React.FC<LessonCardProps> = ({
               </p>
             )}
 
-            {/* Time meta row */}
-            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-              <span className="flex items-center gap-1 text-[10px] text-slate-400">
+            {/* Time meta row — RTL-safe separators */}
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap text-[10px] text-slate-400">
+              <span className="flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -193,21 +269,26 @@ const LessonCard: React.FC<LessonCardProps> = ({
               </span>
 
               {spentLabel && (
-                <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  {spentLabel} gelernt
-                </span>
+                <>
+                  <span className="text-slate-600">·</span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    {spentLabel} gelernt
+                  </span>
+                </>
               )}
 
               {lastLabel && (
-                <span className="text-[10px] text-slate-400">{lastLabel}</span>
+                <>
+                  <span className="text-slate-600">·</span>
+                  <span>{lastLabel}</span>
+                </>
               )}
 
-              <span className="text-[10px] text-slate-400 font-farsi" dir="rtl">
-                {lesson.sections.length} بخش
-              </span>
+              <span className="text-slate-600">·</span>
+              <span className="font-farsi" dir="rtl">{lesson.sections.length} بخش</span>
             </div>
           </div>
 
@@ -219,7 +300,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
           </div>
         </button>
 
-        {/* ── Action buttons ── */}
+        {/* Action buttons */}
         <div className="flex items-center gap-1 pr-3 py-3">
           <button
             type="button"
@@ -253,7 +334,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
         </div>
       </div>
 
-      {/* Expanded content slot */}
+      {/* Expanded content slot (MasterFile) */}
       {isActive && children}
     </article>
   );

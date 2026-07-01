@@ -29,17 +29,31 @@ Keep this file under 2 pages; update after every session.
 | 2026-07-01 | Lesson cards: subtle indigo glow on hover | Polish |
 | 2026-07-01 | Badges: solid bg-*-600 text-white (vibrant) | Better readability |
 | 2026-07-01 | Lesson cards: fadeInUp animation on mount | Smooth UX |
+| 2026-07-02 | Logo + name area clickable → navigates home (LandingPage + App.tsx) | UX: users expect logo to go home |
+| 2026-07-02 | Android splash screen: dark #0F172A bg + app icon, Android 12+ via values-v31 | Brand consistency on app launch |
+| 2026-07-02 | android/app/src/main/assets/ gitignored + untracked | Compiled JS bundles may contain env vars |
+| 2026-07-02 | AgentPage: react-markdown + remark-gfm replaces formatAnswer() + dangerouslySetInnerHTML | Safe rendering of Gemini markdown output |
+| 2026-07-02 | Model upgraded: gemini-1.5-flash → gemini-2.5-flash in AgentPage | Better answer quality, still free tier |
+| 2026-07-02 | Mobile lesson cards: compact row layout (badge + title + chevron, expanded panel on tap) | Cards too large for mobile viewport |
+| 2026-07-02 | Mobile navbar: hamburger menu with labeled dropdown (Stats, Quiz, Flash, PDF, AI…) | Desktop icon bar unreadable on mobile |
+| 2026-07-02 | Mobile hero: h-40, 2×2 feature grid, descriptions hidden on mobile | Cards pushed below fold on small screens |
+| 2026-07-02 | Empty states: t.dueNone / t.streakStart instead of bare '—' | Friendlier dashboard messaging |
+| 2026-07-02 | Weitermachen title: line-clamp-2 (was truncate) | Long lesson names were cut mid-word |
+| 2026-07-02 | Exam date form: flex-col on mobile, w-full on input+button | Button text overflowed on narrow screens |
+| 2026-07-02 | Lesson card meta: RTL with dir="rtl" on Farsi spans, · separators | Correct text direction for mixed DE/FA metadata |
+| 2026-07-02 | LandingPage always dark: theme toggle removed | Landing is brand-facing; dark is the identity |
+
 ---
 
 ## Known Bugs
 
 | # | Bug | Severity | Status |
-|---|-----|----------|--------|
+| --- | --- | --- | --- |
 | 1 | Lint fails on bundleRelease (Kotlin/Gradle mismatch) | Low | Workaround: `-x lintVitalAnalyzeRelease` |
-| 2 | Android build artifacts committed to repo (should be gitignored) | Low | Open |
+| 2 | Android build artifacts committed to repo (should be gitignored) | Low | Fixed: gitignored + untracked |
 | 3 | icon-192.png.png (duplicate extension) in public/ | Low | Open |
 | 4 | server-room.png still in public/ (unused) | Low | Can be deleted |
-| 5 | AI responses show raw Markdown (partially fixed with formatAnswer) | Medium | Fixed for **, ###; tables/lists still raw |
+| 5 | AI responses show raw Markdown | Medium | Fixed: react-markdown + remark-gfm |
 
 ---
 

@@ -5,8 +5,6 @@ import { useLanguage, LangToggle } from "../src/contexts/LanguageContext";
 
 interface LandingPageProps {
   onStart: () => void;
-  darkMode: boolean;
-  onToggleDarkMode: () => void;
 }
 
 // ─── Onboarding wizard ────────────────────────────────────────────────────────
@@ -142,7 +140,7 @@ const OnboardingWizard: React.FC<{
   );
 };
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDarkMode }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const { t } = useLanguage();
   const [section, setSection] = useState<"home" | "features" | "languages">("home");
   const [showOnboarding, setShowOnboarding] = useState(
@@ -175,15 +173,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
       <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setSection("home"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
             <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
               <img src="/smart-academy-48.png" alt="Smart Academy" className="w-full h-full object-cover" />
             </div>
-            <div className="hidden sm:flex flex-col">
+            <div className="hidden sm:flex flex-col text-left">
               <span className="text-sm font-semibold text-slate-50 tracking-tight">{t.platformName}</span>
               <span className="text-[11px] text-slate-400">{t.platformSub}</span>
             </div>
-          </div>
+          </button>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1 rounded-full bg-slate-800/80 px-1 py-0.5">
@@ -216,21 +218,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, darkMode, onToggleDa
           {/* Right: lang toggle + CTA + darkmode + mobile */}
           <div className="flex items-center gap-2">
             <LangToggle />
-            <button
-              type="button"
-              onClick={onToggleDarkMode}
-              className="p-1.5 rounded-full text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
-            >
-              {darkMode ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
+            {/* Theme-Toggle intentionally omitted — LandingPage is always dark (brand view) */}
             <button
               type="button"
               onClick={() => goToDashboardWithType("GA2")}
@@ -335,26 +323,40 @@ const HomeSection: React.FC<{
   ];
   return (
     <>
-      {/* Hero */}
-      <section className="hero-bg w-full min-h-[52vh]" />
+      {/* Hero — h-40 on mobile, full height on desktop */}
+      <section className="hero-bg w-full h-40 md:min-h-[52vh]" />
+
+      {/* Mobile below-hero content (hidden on desktop) */}
+      <div className="md:hidden px-4 py-4 bg-slate-900 border-b border-slate-800" dir={isRTL ? "rtl" : "ltr"}>
+        <h2 className="text-lg font-bold text-slate-50 leading-snug mb-3">{t.mobileHeroTitle}</h2>
+        <button
+          type="button"
+          onClick={() => goTo("GA2")}
+          className="px-5 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors shadow-md"
+        >
+          {t.mobileHeroCta}
+        </button>
+      </div>
 
       {/* Feature cards */}
-      <section id="features" className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid gap-4 md:grid-cols-4">
+      <section id="features" className="max-w-6xl mx-auto px-3 py-4 md:px-4 md:py-8">
+        {/* Section headline — mobile only */}
+        <h2 className="md:hidden text-sm font-semibold text-slate-400 mb-3">{t.whatYouLearn}</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           {cards.map(item => (
             <button
               type="button"
               key={item.num}
               onClick={() => goTo(item.dest)}
-              className={`rounded-2xl border p-4 flex flex-col gap-2 ${isRTL ? "text-right" : "text-left"} transition-all cursor-pointer ${CARD_ACCENT[item.color]}`}
+              className={`rounded-2xl border p-3 md:p-4 flex flex-col gap-1.5 md:gap-2 ${isRTL ? "text-right" : "text-left"} transition-all cursor-pointer ${CARD_ACCENT[item.color]}`}
               dir={isRTL ? "rtl" : "ltr"}
             >
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold ${CARD_NUM_BG[item.color]}`}>
+              <div className={`w-7 h-7 md:w-8 md:h-8 rounded-xl flex items-center justify-center text-sm font-bold ${CARD_NUM_BG[item.color]}`}>
                 {item.num}
               </div>
-              <h3 className="text-sm font-semibold text-slate-100">{item.title}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">{item.text}</p>
-              <span className="text-[10px] text-slate-500 mt-auto">{t.clickHere}</span>
+              <h3 className="text-xs md:text-sm font-semibold text-slate-100 leading-snug">{item.title}</h3>
+              <p className="hidden md:block text-xs text-slate-400 leading-relaxed">{item.text}</p>
+              <span className="text-[10px] text-indigo-400 mt-auto">{t.startLesson}</span>
             </button>
           ))}
         </div>

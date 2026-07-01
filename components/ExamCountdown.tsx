@@ -160,17 +160,17 @@ const ExamCountdown: React.FC<Props> = ({ compact = false }) => {
             <p className="text-xs text-slate-500">{t.examDateSub}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 md:flex-row">
           <input
             type="date"
             aria-label={t.examDateTitle}
             value={inputVal}
             onChange={e => setInputVal(e.target.value)}
             min={new Date().toISOString().split('T')[0]}
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+            className="w-full md:flex-1 text-sm px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200"
           />
           <button type="button" onClick={saveDate} disabled={!inputVal}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">
+            className="w-full md:w-auto px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
             {t.save}
           </button>
         </div>

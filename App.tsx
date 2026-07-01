@@ -93,6 +93,7 @@ const App: React.FC = () => {
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showPdfPage, setShowPdfPage] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -179,11 +180,7 @@ const App: React.FC = () => {
   const expandedLesson = expandedLessonId ? LESSONS.find(l => l.id === expandedLessonId) : null;
 
   const landingContent = (
-    <LandingPage
-      onStart={() => setView('app')}
-      darkMode={darkMode}
-      onToggleDarkMode={toggleDarkMode}
-    />
+    <LandingPage onStart={() => setView('app')} />
   );
 
   const appContent = (
@@ -199,21 +196,22 @@ const App: React.FC = () => {
               type="button"
               onClick={() => setView('landing')}
               title={t.toHome}
-              className="w-12 h-12 rounded-xl overflow-hidden hover:opacity-80 transition-opacity shadow-sm flex-shrink-0"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <img src="/smart-academy-48.png" alt="Smart Academy" className="w-full h-full object-cover" />
+              <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
+                <img src="/smart-academy-48.png" alt="Smart Academy" className="w-full h-full object-cover" />
+              </div>
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-sm font-semibold text-slate-50 tracking-tight">{t.platformName}</span>
+                <span className="text-[11px] text-slate-400">{t.platformSub}</span>
+              </div>
             </button>
 
-            <div className="hidden sm:flex flex-col">
-              <span className="text-sm font-semibold text-slate-50 tracking-tight">{t.platformName}</span>
-              <span className="text-[11px] text-slate-400">{t.platformSub}</span>
-            </div>
-
-            {/* Home button */}
+            {/* Home button — desktop only (mobile bottom-nav handles this) */}
             <button
               type="button"
               onClick={() => setView('landing')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/80 transition-colors border border-slate-700 hover:border-slate-500"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/80 transition-colors border border-slate-700 hover:border-slate-500"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -245,23 +243,25 @@ const App: React.FC = () => {
 
           {/* Right actions */}
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-0.5 rounded-full bg-slate-800/80 px-1 py-0.5">
-              <button onClick={() => setShowSearch(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.search}>
+
+            {/* Desktop: full icon bar */}
+            <div className="hidden md:flex items-center gap-0.5 rounded-full bg-slate-800/80 px-1 py-0.5">
+              <button type="button" onClick={() => setShowSearch(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.search}>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               </button>
-              <button onClick={() => setShowStats(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.stats}>
+              <button type="button" onClick={() => setShowStats(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.stats}>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2z" /></svg>
               </button>
-              <button onClick={() => setShowQuiz(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.quiz}>
+              <button type="button" onClick={() => setShowQuiz(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.quiz}>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </button>
-              <button onClick={() => setShowFlashcards(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.flashcards}>
+              <button type="button" onClick={() => setShowFlashcards(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.flashcards}>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
               </button>
-              <button onClick={() => setShowExam(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.examSim}>
+              <button type="button" onClick={() => setShowExam(true)} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.examSim}>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               </button>
-              <button onClick={() => setShowErrorBank(true)}
+              <button type="button" onClick={() => setShowErrorBank(true)}
                 className="relative p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.errorBank}>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 {errorBankCount > 0 && (
@@ -276,20 +276,36 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            <Link to="/agent" className="hidden sm:inline-flex px-3 py-1.5 rounded-full text-xs font-semibold border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 transition-colors">
+            {/* Mobile: search icon only */}
+            <button type="button" onClick={() => setShowSearch(true)}
+              className="md:hidden p-1.5 rounded-full text-slate-300 hover:bg-slate-700 hover:text-white transition-colors" title={t.search}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </button>
+
+            {/* AI link — desktop only */}
+            <Link to="/agent" className="hidden md:inline-flex px-3 py-1.5 rounded-full text-xs font-semibold border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 transition-colors">
               AI
             </Link>
 
-            {/* Language toggle */}
-            <LangToggle />
+            {/* Language toggle — desktop only */}
+            <div className="hidden md:block"><LangToggle /></div>
 
-            {/* Dark Mode */}
-            <button onClick={toggleDarkMode} className="p-1.5 rounded-full text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors">
+            {/* Dark Mode — always visible */}
+            <button type="button" onClick={toggleDarkMode} className="p-1.5 rounded-full text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors">
               {darkMode ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
               ) : (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
               )}
+            </button>
+
+            {/* Hamburger — mobile only */}
+            <button type="button" onClick={() => setShowMobileMenu(p => !p)}
+              className="md:hidden p-1.5 rounded-full text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors" aria-label={t.menuOpen}>
+              {showMobileMenu
+                ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+              }
             </button>
           </div>
         </div>
@@ -297,9 +313,69 @@ const App: React.FC = () => {
         {/* Breadcrumb */}
         {expandedLesson && (
           <div className="max-w-6xl mx-auto px-4 pb-2 flex items-center gap-1.5 text-xs text-slate-400">
-            <button onClick={() => setExpandedLessonId(null)} className="hover:text-slate-200 transition-colors">{activeType}</button>
+            <button type="button" onClick={() => setExpandedLessonId(null)} className="hover:text-slate-200 transition-colors">{activeType}</button>
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             <span className="text-slate-200 truncate max-w-[240px]">{expandedLesson.title}</span>
+          </div>
+        )}
+
+        {/* Mobile hamburger dropdown */}
+        {showMobileMenu && (
+          <div className="md:hidden border-t border-slate-800 bg-slate-900/98 backdrop-blur">
+            <div className="max-w-6xl mx-auto px-4 py-2 space-y-0.5">
+              {/* Language toggle */}
+              <div className="flex items-center justify-between px-2 py-2.5 rounded-lg">
+                <span className="text-sm text-slate-300">Sprache / زبان</span>
+                <LangToggle />
+              </div>
+              {/* Stats */}
+              <button type="button" onClick={() => { setShowStats(true); setShowMobileMenu(false); }}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2z" /></svg>
+                <span className="text-sm">{t.stats}</span>
+              </button>
+              {/* Quiz */}
+              <button type="button" onClick={() => { setShowQuiz(true); setShowMobileMenu(false); }}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span className="text-sm">{t.quiz}</span>
+              </button>
+              {/* Flashcards */}
+              <button type="button" onClick={() => { setShowFlashcards(true); setShowMobileMenu(false); }}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                <span className="text-sm">{t.flashcards}</span>
+              </button>
+              {/* Exam simulation */}
+              <button type="button" onClick={() => { setShowExam(true); setShowMobileMenu(false); }}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <span className="text-sm">{t.examSim}</span>
+              </button>
+              {/* Error bank */}
+              <button type="button" onClick={() => { setShowErrorBank(true); setShowMobileMenu(false); }}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span className="text-sm flex-1">{t.errorBank}</span>
+                {errorBankCount > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {errorBankCount > 9 ? '9+' : errorBankCount}
+                  </span>
+                )}
+              </button>
+              {/* PDF */}
+              <button type="button" onClick={() => { setShowPdfPage(v => !v); setShowMobileMenu(false); }}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                <span className="text-sm">{t.pdf}</span>
+              </button>
+              {/* AI Agent */}
+              <Link to="/agent" onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-3 px-2 py-2.5 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-slate-800 transition-colors">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m1.636-6.364l.707.707M12 21v-1M5.636 18.364l.707-.707M18.364 18.364l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span className="text-sm">{t.aiAgent}</span>
+              </Link>
+            </div>
           </div>
         )}
       </header>
@@ -350,7 +426,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-white/70 uppercase tracking-wide">{t.continueLearning}</p>
-                      <p className="text-sm font-semibold text-white truncate transition-colors">
+                      <p className="text-sm font-semibold text-white line-clamp-2 transition-colors">
                         {lastAccessed.lesson.title}
                       </p>
                       <p className="text-[10px] text-white/70">{lastAccessed.lesson.type} · #{lastAccessed.lesson.order}</p>
@@ -377,7 +453,7 @@ const App: React.FC = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg">🃏</span>
                       <span className={`text-xs font-bold ${dueFlashcards > 0 ? 'text-amber-500' : 'text-slate-400'}`}>
-                        {dueFlashcards > 0 ? dueFlashcards : '—'}
+                        {dueFlashcards > 0 ? dueFlashcards : t.dueNone}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-500">{t.dueToday}</p>
@@ -388,7 +464,7 @@ const App: React.FC = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg">🔥</span>
                       <span className={`text-xs font-bold ${stats.studyStreak > 0 ? 'text-orange-500' : 'text-slate-400'}`}>
-                        {stats.studyStreak > 0 ? `${stats.studyStreak}d` : '—'}
+                        {stats.studyStreak > 0 ? `${stats.studyStreak}d` : t.streakStart}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-500">{t.streak}</p>
@@ -420,7 +496,7 @@ const App: React.FC = () => {
               </div>
 
               <Suspense fallback={<div className="text-center text-sm py-4">Lade Lektionen...</div>}>
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {filteredLessons.map((lesson, index) => {
                     const isActive = expandedLessonId === lesson.id;
                     const lessonProgress = getLessonProgress(lesson.id);
