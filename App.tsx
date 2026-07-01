@@ -4,9 +4,11 @@ import React, {
   Suspense,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useLanguage, LangToggle } from './src/contexts/LanguageContext';
 
 import { LESSONS } from './constants';
@@ -80,7 +82,10 @@ const App: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const [activeType, setActiveType] = useState<CourseType>('GA2');
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
-  const [view, setView] = useState<'landing' | 'app'>('landing');
+  // On native Android/iOS, skip the landing page and go straight to the dashboard
+  const [view, setView] = useState<'landing' | 'app'>(() =>
+    Capacitor.isNativePlatform() ? 'app' : 'landing'
+  );
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
