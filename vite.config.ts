@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { cloudflare } from "@cloudflare/vite-plugin";
 // Visualizer is optional; we attempt to import it at runtime.
 
 export default defineConfig(async ({ mode }) => {
@@ -20,11 +21,8 @@ export default defineConfig(async ({ mode }) => {
         port: 3000,
         host: '0.0.0.0',
       },
-      plugins: [
-        react(),
-        // Generate bundle analysis at build time if available
-        ...(visualizerPlugin ? [visualizerPlugin] : [])
-      ],
+      plugins: [react(), // Generate bundle analysis at build time if available
+      ...(visualizerPlugin ? [visualizerPlugin] : []), cloudflare()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
