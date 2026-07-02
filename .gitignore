@@ -15,6 +15,11 @@ dist-ssr
 # Android — generated build artifacts (may contain compiled env vars)
 android/app/src/main/assets/
 
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
