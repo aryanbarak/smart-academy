@@ -11,6 +11,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
+import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar';
 import { storageGet, storageSet, initStorage } from './utils/storage';
 import { useLanguage, LangToggle } from './src/contexts/LanguageContext';
 
@@ -146,8 +147,12 @@ const App: React.FC = () => {
   useEffect(() => {
     initStorage(); // migrate localStorage → @capacitor/preferences on first native launch
     if (Capacitor.isNativePlatform()) {
-      // launchAutoHide is false — hide manually after React has rendered to prevent white flash
+      // Hide splash after React renders (launchAutoHide: false in config)
       SplashScreen.hide({ fadeOutDuration: 200 });
+      // Enforce status-bar appearance at runtime — Samsung One UI sometimes
+      // ignores the capacitor.config.ts values until explicitly set in JS.
+      StatusBar.setStyle({ style: StatusBarStyle.Light }); // white icons on #0f172a
+      StatusBar.setBackgroundColor({ color: '#0f172a' });
     }
     logEnvConfig();
     testSupabaseConnection();

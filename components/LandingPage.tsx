@@ -171,7 +171,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       )}
 
       {/* ── Header (همان سبک dashboard) ── */}
-      <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
+      <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-40 safe-top">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           {/* Logo */}
           <button

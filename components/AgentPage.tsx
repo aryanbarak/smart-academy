@@ -130,7 +130,7 @@ const AgentPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-950 text-slate-100 safe-top">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button
           type="button"
